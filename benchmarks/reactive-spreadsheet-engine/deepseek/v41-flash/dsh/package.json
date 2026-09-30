@@ -1,0 +1,22 @@
+{
+  "name": "reactive-spreadsheet-engine",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A compact spreadsheet with a hand-written formula parser, a real dependency graph and reactive recalculation, backed by a small persistence server.",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "node server/index.mjs",
+    "build": "node scripts/build.mjs",
+    "start": "node server/index.mjs --production",
+    "prod": "npm run build && node server/index.mjs --production",
+    "test": "node --test",
+    "check": "node --test && node scripts/build.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "jsdom": "^28.0.0"
+  }
+}

@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 380" width="980" height="380" font-family="ui-monospace, Menlo, monospace">
+  <rect width="980" height="380" fill="#0f1115"/>
+  <text x="24" y="34" fill="#e6e9ef" font-size="16" font-weight="bold">Reactive Spreadsheet Engine — data flow</text>
+
+  <!-- UI column -->
+  <rect x="24" y="60" width="210" height="130" rx="8" fill="#171a21" stroke="#2a2f3a"/>
+  <text x="40" y="86" fill="#9fd0ff" font-size="13">grid / UI</text>
+  <text x="40" y="108" fill="#8b93a3" font-size="11">keyboard · clipboard</text>
+  <text x="40" y="126" fill="#8b93a3" font-size="11">undo/redo · trace</text>
+  <text x="40" y="144" fill="#8b93a3" font-size="11">src/ui/app.js</text>
+
+  <rect x="24" y="210" width="210" height="130" rx="8" fill="#171a21" stroke="#2a2f3a"/>
+  <text x="40" y="236" fill="#9fd0ff" font-size="13">server (node:http)</text>
+  <text x="40" y="258" fill="#8b93a3" font-size="11">GET/PUT /api/workbook</text>
+  <text x="40" y="276" fill="#8b93a3" font-size="11">atomic JSON write</text>
+  <text x="40" y="294" fill="#8b93a3" font-size="11">server/index.mjs</text>
+  <text x="40" y="318" fill="#4ec9a0" font-size="11">data/workbook.json</text>
+
+  <!-- engine column -->
+  <rect x="300" y="60" width="300" height="280" rx="8" fill="#171a21" stroke="#4da3ff"/>
+  <text x="318" y="86" fill="#e6e9ef" font-size="13" font-weight="bold">engine (src/engine/)</text>
+
+  <rect x="318" y="100" width="264" height="42" rx="6" fill="#1d2129" stroke="#2a2f3a"/>
+  <text x="330" y="118" fill="#e6e9ef" font-size="11">parser.js — tokenize → AST + precedents</text>
+  <text x="330" y="134" fill="#8b93a3" font-size="10">+ - * / ^ % &amp; comparisons, SUM/AVG/IF…</text>
+
+  <rect x="318" y="152" width="264" height="42" rx="6" fill="#1d2129" stroke="#2a2f3a"/>
+  <text x="330" y="170" fill="#e6e9ef" font-size="11">evaluator.js — AST → {value, error}</text>
+  <text x="330" y="186" fill="#8b93a3" font-size="10">errors are values and propagate</text>
+
+  <rect x="318" y="204" width="264" height="66" rx="6" fill="#1d2129" stroke="#2a2f3a"/>
+  <text x="330" y="222" fill="#e6e9ef" font-size="11">engine.js — dependency graph</text>
+  <text x="330" y="238" fill="#8b93a3" font-size="10">precedents / dependents indexes</text>
+  <text x="330" y="254" fill="#8b93a3" font-size="10">dirty closure → SCC → topological order</text>
+
+  <rect x="318" y="280" width="264" height="42" rx="6" fill="#1d2129" stroke="#c678dd"/>
+  <text x="330" y="298" fill="#e3b6f0" font-size="11">Tarjan SCC → #CYCLE!</text>
+  <text x="330" y="314" fill="#8b93a3" font-size="10">Kahn topo sort → evaluation order</text>
+
+  <!-- arrows -->
+  <defs>
+    <marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#4da3ff"/>
+    </marker>
+    <marker id="b" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#d08b3f"/>
+    </marker>
+  </defs>
+  <line x1="234" y1="125" x2="296" y2="125" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#a)"/>
+  <text x="240" y="118" fill="#8b93a3" font-size="10">edit</text>
+  <line x1="296" y1="160" x2="234" y2="160" stroke="#d08b3f" stroke-width="1.5" marker-end="url(#b)"/>
+  <text x="238" y="176" fill="#8b93a3" font-size="10">values</text>
+
+  <line x1="234" y1="245" x2="296" y2="245" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#a)"/>
+  <text x="236" y="238" fill="#8b93a3" font-size="10">load / raw cells</text>
+  <line x1="296" y1="285" x2="234" y2="285" stroke="#d08b3f" stroke-width="1.5" marker-end="url(#b)"/>
+  <text x="236" y="301" fill="#8b93a3" font-size="10">raw cells (debounced)</text>
+
+  <!-- notes -->
+  <rect x="640" y="60" width="316" height="280" rx="8" fill="#171a21" stroke="#2a2f3a"/>
+  <text x="658" y="86" fill="#e6e9ef" font-size="13" font-weight="bold">why it stays fast</text>
+  <text x="658" y="112" fill="#8b93a3" font-size="11">1. a change marks only the edited cell</text>
+  <text x="658" y="132" fill="#8b93a3" font-size="11">   and its transitive dependents dirty</text>
+  <text x="658" y="160" fill="#8b93a3" font-size="11">2. cycle members are found up-front,</text>
+  <text x="658" y="180" fill="#8b93a3" font-size="11">   so evaluation can never loop forever</text>
+  <text x="658" y="208" fill="#8b93a3" font-size="11">3. remaining dirty cells are evaluated</text>
+  <text x="658" y="228" fill="#8b93a3" font-size="11">   once, in topological order</text>
+  <text x="658" y="256" fill="#8b93a3" font-size="11">4. errors are values, so they travel</text>
+  <text x="658" y="276" fill="#8b93a3" font-size="11">   along the graph like data</text>
+  <text x="658" y="304" fill="#4ec9a0" font-size="11">cost ∝ affected sub-graph, not sheet size</text>
+  <text x="658" y="326" fill="#8b93a3" font-size="10">inspector shows the exact order used</text>
+</svg>
