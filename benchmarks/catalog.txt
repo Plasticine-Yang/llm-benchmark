@@ -1,0 +1,28 @@
+# benchmark 组合全集
+#
+# 各 benchmark 项目里 <family>/<model>/<harness> 的命名空间以这份清单为准。
+# 页面上的「厂商 / 模型 / Harness」三列就是从这里来的，与具体项目无关。
+#
+# 格式：<family>/<model>    <harness>[, <harness>...]
+#   * 以 # 开头的行是注释，空行忽略
+#   * 展示顺序就是这里的书写顺序
+#
+# 两点约定：
+#   1. 每个 benchmark 项目都是这份全集的子集。项目目录里出现清单外的组合，
+#      页面底部会给出警告（不会静默忽略）。
+#   2. 清单里的组合即使还没有对应的产出目录也可以选 —— 这正是跑新组合的入口，
+#      target 路径按 <project>/<family>/<model>/<harness> 拼出来即可。
+#
+# 新增模型或 harness 时改这里，刷新页面即生效。
+
+gpt/astra            codex, doubao-work, traex
+gpt/5-6-sol          codex, traex
+gpt/6-1-sol          codex
+gpt/6-sol            codex
+gpt/6-luna           codex
+deepseek/v4-flash    dsh, opencode, web
+deepseek/v41-flash   dsh
+glm/5-3-flash        opencode, zcode
+grok/4-5             grok-cli
+grok/4-6             grok-cli
+seed/2-1             lite, pro, turbo
