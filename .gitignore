@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.tools/
+verify*/
+*.local
+.DS_Store
+*.log
+preview/
+.pnpm-store/
+*.tsbuildinfo
+test-results/
+playwright-report/

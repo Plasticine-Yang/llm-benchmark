@@ -1,0 +1,151 @@
+/* ============================================================================
+   NOCTURNE ONE — material tokens
+   "a precision acoustic instrument in a dark room"
+   ========================================================================= */
+
+@property --shell-hi {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #3a4048;
+}
+@property --shell-mid {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #1e2228;
+}
+@property --shell-lo {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #0e1013;
+}
+@property --ring {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #aab3bf;
+}
+@property --glow {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: rgba(201, 138, 60, 0.55);
+}
+@property --amb-a {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: rgba(201, 138, 60, 0.16);
+}
+@property --amb-b {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: rgba(140, 160, 190, 0.1);
+}
+@property --pad-hi {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #23272d;
+}
+@property --pad-lo {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #0b0d10;
+}
+
+:root {
+  /* ---- surface ---- */
+  --void: #0a0b0d;
+  --graphite-900: #0e1013;
+  --graphite-850: #12151a;
+  --graphite-800: #16191e;
+  --graphite-700: #1c2026;
+  --graphite-600: #262b33;
+  --graphite-500: #333941;
+  --graphite-400: #454c56;
+
+  /* ---- metal / type ---- */
+  --silver-050: #f6f8fa;
+  --silver-100: #eef1f5;
+  --silver-200: #d7dde5;
+  --silver-300: #b2bac6;
+  --silver-400: #8b95a3;
+  --silver-500: #6a737f;
+  --silver-600: #4c535d;
+
+  /* ---- accent ---- */
+  --amber: #c98a3c;
+  --amber-bright: #e2ab61;
+  --amber-deep: #7d5220;
+  --rust: #c2564a;
+
+  /* ---- glass primitives ---- */
+  --glass-fill: rgba(255, 255, 255, 0.045);
+  --glass-fill-strong: rgba(255, 255, 255, 0.075);
+  --glass-edge: rgba(255, 255, 255, 0.14);
+  --glass-edge-soft: rgba(255, 255, 255, 0.06);
+  --glass-inner-shadow: rgba(0, 0, 0, 0.55);
+  --glass-spec: rgba(255, 255, 255, 0.5);
+
+  /* ---- motion ---- */
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ---- chrome ---- */
+  --rule: rgba(255, 255, 255, 0.08);
+  --rule-soft: rgba(255, 255, 255, 0.045);
+  --stage-warm: rgba(201, 138, 60, 0.3);
+  --nav-h: 60px;
+  --gutter: clamp(20px, 4.2vw, 76px);
+
+  color-scheme: dark;
+}
+
+/* The colorway swap animates these registered custom properties, which lets
+   SVG gradient stops, ambient light and HUD glow cross-fade together. */
+html[data-colorway] {
+  transition: --shell-hi 820ms var(--ease-out-quint),
+    --shell-mid 820ms var(--ease-out-quint),
+    --shell-lo 820ms var(--ease-out-quint),
+    --ring 820ms var(--ease-out-quint), --pad-hi 820ms var(--ease-out-quint),
+    --pad-lo 820ms var(--ease-out-quint), --glow 820ms var(--ease-out-quint),
+    --amb-a 900ms var(--ease-out-quint), --amb-b 900ms var(--ease-out-quint),
+    --stage-warm 820ms var(--ease-out-quint);
+}
+
+/* ---------------------------------------------------------------- colorways */
+[data-colorway='obsidian'] {
+  --shell-hi: #3d434c;
+  --shell-mid: #1f232a;
+  --shell-lo: #0d0f12;
+  --ring: #aab3bf;
+  --pad-hi: #262a31;
+  --pad-lo: #0b0d10;
+  --glow: rgba(201, 138, 60, 0.6);
+  --amb-a: rgba(201, 138, 60, 0.17);
+  --amb-b: rgba(138, 158, 190, 0.11);
+  --stage-warm: rgba(201, 138, 60, 0.3);
+}
+
+[data-colorway='mist'] {
+  --shell-hi: #f0f4f8;
+  --shell-mid: #c1cad5;
+  --shell-lo: #7e8894;
+  --ring: #eaf0f6;
+  --pad-hi: #d5dbe3;
+  --pad-lo: #8e97a3;
+  --glow: rgba(186, 205, 226, 0.5);
+  --amb-a: rgba(150, 176, 208, 0.2);
+  --amb-b: rgba(232, 242, 255, 0.1);
+  --stage-warm: rgba(176, 198, 224, 0.28);
+}
+
+[data-colorway='amber'] {
+  --shell-hi: #d99f57;
+  --shell-mid: #a4702f;
+  --shell-lo: #553516;
+  --ring: #e9bd7f;
+  --pad-hi: #6b4520;
+  --pad-lo: #2a1a09;
+  --glow: rgba(226, 171, 97, 0.62);
+  --amb-a: rgba(226, 152, 62, 0.24);
+  --amb-b: rgba(198, 116, 58, 0.12);
+  --stage-warm: rgba(226, 152, 62, 0.36);
+}
