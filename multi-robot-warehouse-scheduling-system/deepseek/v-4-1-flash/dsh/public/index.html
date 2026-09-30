@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Multi-Robot Warehouse Scheduling System</title>
+    <meta name="description" content="Multi-robot warehouse scheduling and simulation: space-time path reservations, dynamic replanning, live conflict reasons." />
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🤖</text></svg>" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">▦</span>
+        <div>
+          <h1>Multi-Robot Warehouse Scheduling</h1>
+          <p class="sub" id="conn-line">connecting…</p>
+        </div>
+      </div>
+
+      <div class="chips">
+        <span class="chip" id="chip-conn"><i class="dot"></i><span id="conn-text">offline</span></span>
+        <span class="chip">tick <b id="chip-tick">0</b></span>
+        <span class="chip">seq <b id="chip-seq">0</b></span>
+        <span class="chip">robots <b id="chip-robots">0</b></span>
+        <span class="chip">moving <b id="chip-moving">0</b></span>
+        <span class="chip">waiting <b id="chip-waiting">0</b></span>
+        <span class="chip">jobs <b id="chip-jobs">0/0</b></span>
+        <span class="chip" id="chip-state">paused</span>
+      </div>
+
+      <div class="controls">
+        <button id="btn-pause" class="btn primary">▶ Resume</button>
+        <button id="btn-step" class="btn">⏭ Step</button>
+        <button id="btn-reset" class="btn danger">⟲ Reset</button>
+        <label class="field inline">
+          <span>speed</span>
+          <input id="speed" type="range" min="1" max="16" step="1" value="4" />
+          <b id="speed-value">4/s</b>
+        </label>
+        <label class="field inline">
+          <span>seed</span>
+          <input id="seed" type="number" value="7" min="1" max="999999" />
+        </label>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="card map-panel">
+        <div class="card-head">
+          <h2>Warehouse map <span class="hint">click a cell to block/unblock · click a robot to select it</span></h2>
+          <div class="map-tools">
+            <label class="toggle"><input type="checkbox" id="tgl-block" /> <span>block mode</span></label>
+            <label class="toggle"><input type="checkbox" id="tgl-paths" checked /> <span>paths</span></label>
+            <label class="toggle"><input type="checkbox" id="tgl-lanes" checked /> <span>single-lane aisles</span></label>
+            <label class="toggle"><input type="checkbox" id="tgl-labels" checked /> <span>labels</span></label>
+          </div>
+        </div>
+        <div class="canvas-wrap" id="canvas-wrap">
+          <canvas id="map"></canvas>
+          <div class="hover-tip" id="hover-tip" hidden></div>
+        </div>
+        <div class="legend">
+          <span><i class="sw floor"></i>floor</span>
+          <span><i class="sw shelf"></i>shelf</span>
+          <span><i class="sw ws"></i>workstation</span>
+          <span><i class="sw blocked"></i>blocked</span>
+          <span><i class="sw aisle"></i>1-cell aisle</span>
+          <span><i class="sw pickup"></i>pickup point</span>
+          <span><i class="sw path"></i>planned route</span>
+          <span><i class="sw robot"></i>robot</span>
+          <span><i class="sw wait"></i>waiting</span>
+        </div>
+        <div class="selected" id="selected-info">No robot selected.</div>
+      </section>
+
+      <aside class="side">
+        <section class="card">
+          <div class="card-head"><h2>New transport job</h2></div>
+          <form id="job-form" class="form">
+            <label class="field">
+              <span>Pickup shelf</span>
+              <select id="job-shelf"></select>
+            </label>
+            <label class="field">
+              <span>Destination workstation</span>
+              <select id="job-ws"></select>
+            </label>
+            <label class="field">
+              <span>Priority</span>
+              <select id="job-priority">
+                <option value="5">5 · critical</option>
+                <option value="4">4 · urgent</option>
+                <option value="3" selected>3 · high</option>
+                <option value="2">2 · normal</option>
+                <option value="1">1 · low</option>
+              </select>
+            </label>
+            <div class="row">
+              <button class="btn primary" type="submit">Create job</button>
+              <button class="btn" type="button" id="btn-demo">3 demo jobs</button>
+            </div>
+            <p class="note" id="job-msg"></p>
+          </form>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><h2>Job queue <b id="job-count" class="badge">0</b></h2></div>
+          <div class="table-wrap">
+            <table class="tbl">
+              <thead>
+                <tr><th>job</th><th>shelf → ws</th><th>prio</th><th>status</th><th>robot</th><th>wait</th></tr>
+              </thead>
+              <tbody id="job-rows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><h2>Robot states <b id="robot-count" class="badge">0</b></h2></div>
+          <div class="table-wrap">
+            <table class="tbl">
+              <thead>
+                <tr><th>robot</th><th>state</th><th>job</th><th>pos</th><th>waiting reason</th><th>moves</th></tr>
+              </thead>
+              <tbody id="robot-rows"></tbody>
+            </table>
+          </div>
+        </section>
+      </aside>
+    </main>
+
+    <footer class="card log-panel">
+      <div class="card-head">
+        <h2>Event log <b id="log-count" class="badge">0</b></h2>
+        <div class="log-tools">
+          <div class="segmented" id="log-filter">
+            <button data-filter="important" class="active">key events</button>
+            <button data-filter="waits">waits</button>
+            <button data-filter="moves">moves</button>
+            <button data-filter="all">all</button>
+          </div>
+          <label class="toggle"><input type="checkbox" id="tgl-autoscroll" checked /> <span>auto-scroll</span></label>
+          <button class="btn tiny" id="btn-resync">resync</button>
+        </div>
+      </div>
+      <ol class="log" id="log"></ol>
+    </footer>
+
+    <div class="toast" id="toast" hidden></div>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

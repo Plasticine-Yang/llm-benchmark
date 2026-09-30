@@ -1,0 +1,22 @@
+{
+  "name": "multi-robot-warehouse-scheduling-system",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Multi-robot warehouse scheduling & simulation system: cooperative space-time path planning, time-step reservations, live replanning and real-time streaming state.",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "dev": "node server/index.js",
+    "start": "node server/index.js --prod",
+    "preview": "node server/index.js --prod",
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/test.mjs",
+    "test:acceptance": "node scripts/acceptance.mjs",
+    "test:ui": "node scripts/ui-smoke.mjs",
+    "verify": "node scripts/test.mjs && node scripts/ui-smoke.mjs && node scripts/build.mjs && node scripts/acceptance.mjs"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
