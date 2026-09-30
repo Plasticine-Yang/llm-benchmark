@@ -1,0 +1,6 @@
+{
+  "name": "warehouse-orbit", "version": "1.0.0", "private": true, "type": "module",
+  "description": "Deterministic multi-robot warehouse scheduling simulator",
+  "scripts": {"dev": "node server/index.js", "start": "node server/index.js", "build": "node scripts/build.js", "test": "node --test test/*.test.js"},
+  "engines": {"node": ">=20"}
+}
