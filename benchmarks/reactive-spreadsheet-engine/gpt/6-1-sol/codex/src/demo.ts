@@ -1,0 +1,22 @@
+import type { RawCells } from './engine';
+export const demoCells: RawCells = {
+  A1: 'LAUNCH BUDGET', A2: 'A small plan. A live calculation.',
+  A4: 'Channel', B4: 'Units', C4: 'Unit cost', D4: 'Total',
+  A5: 'Design', B5: '12', C5: '80', D5: '=B5*C5',
+  A6: 'Engineering', B6: '24', C6: '120', D6: '=B6*C6',
+  A7: 'Marketing', B7: '16', C7: '65', D7: '=B7*C7',
+  A8: 'Operations', B8: '8', C8: '90', D8: '=B8*C8',
+  A10: 'Subtotal', D10: '=SUM(D5:D8)',
+  A11: 'Contingency', C11: '0.1', D11: '=D10*C11',
+  A12: 'Project total', D12: '=D10+D11',
+  A14: 'Average cost', D14: '=AVG(C5:C8)',
+  A17: 'TRY IT OUT',
+  A18: '1. Change the units in B5',
+  A19: '2. Follow the cascade to D12',
+  A20: '3. Select a formula to see its connections',
+  G4: 'PLAYGROUND', G5: 'Root value', H5: '10',
+  G6: 'First step', H6: '=H5*2', G7: 'Second step', H7: '=H6+5',
+  G8: 'Third step', H8: '=H7/5',
+  G10: 'Four cells. One reactive chain.',
+  G11: 'Edit H5 to recalculate all three steps.',
+};
