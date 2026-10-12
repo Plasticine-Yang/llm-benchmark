@@ -1,9 +1,19 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
+import { ComboList } from './components/ComboList';
+import type { FilterMode } from './components/ComboList';
 import { CopyButton } from './components/CopyButton';
-import { Picker } from './components/Picker';
-import type { PickerItem } from './components/Picker';
-import { PromptPreview } from './components/PromptPreview';
-import { composeForSelection, resolveChoice, selectCombo } from './shared/compose';
+import { Icon } from './components/Icon';
+import { ProjectList } from './components/ProjectList';
+import { PromptDocument } from './components/PromptDocument';
+import { Toast, useToast } from './components/Toast';
+import { TopBar } from './components/TopBar';
+import { writeClipboard } from './lib/clipboard';
+import { catalogKeys, groupCombos } from './lib/combos';
+import type { ComboRow } from './lib/combos';
+import { MOD_KEY } from './lib/text';
+import { useTheme } from './lib/theme';
+import { composeForSelection, resolveChoice, selectCombo, TARGET_PLACEHOLDER } from './shared/compose';
 import type { Choice } from './shared/compose';
 import type { Manifest } from './types';
 
@@ -13,16 +23,14 @@ const STORAGE_KEY = 'prompt-studio/selection';
 function parseHash(): Partial<Choice> | null {
   const raw = window.location.hash.replace(/^#\/?/, '').trim();
   if (!raw) return null;
-  const parts = raw.split('/').filter(Boolean);
+  const parts = raw.split('/').filter(Boolean).map((part) => decodeURIComponent(part));
   const project = parts[0];
   if (!project) return null;
 
   // 四层都写全时最准确；只写了项目也能用，其余层回退到第一个可选项。
   const partial: Partial<Choice> = { project };
   if (parts.length >= 4) {
-    const family = parts[1];
-    const model = parts[2];
-    const harness = parts[3];
+    const [, family, model, harness] = parts;
     if (family) partial.family = family;
     if (model) partial.model = model;
     if (harness) partial.harness = harness;
@@ -45,12 +53,18 @@ function readStored(): Partial<Choice> | null {
   }
 }
 
+function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+}
+
 export function App() {
   const [manifest, setManifest] = useState<Manifest | null>(null);
   const [choice, setChoice] = useState<Choice | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [reloadToken, setReloadToken] = useState(0);
+  const [theme, toggleTheme] = useTheme();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -102,38 +116,54 @@ export function App() {
 
   return (
     <div className="app">
-      <header className="topbar">
-        <div className="brand">
-          <span className="brand-mark" aria-hidden="true">
-            PS
-          </span>
-          <span className="brand-text">
-            <span className="brand-title">Prompt Studio</span>
-            <span className="brand-sub">
-              项目 × 厂商 × 模型 × harness → 可直接粘贴的 prompt
-            </span>
-          </span>
-        </div>
-        <div className="topbar-right">
-          {manifest && (
-            <code className="repo-path" title={manifest.repoRoot}>
-              {manifest.repoRoot}
-            </code>
-          )}
-          <button type="button" className="btn btn-ghost" onClick={rescan} disabled={loading}>
-            {loading ? '扫描中…' : '重新扫描'}
-          </button>
-        </div>
-      </header>
+      <TopBar
+        manifest={manifest}
+        loading={loading}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onRescan={rescan}
+      />
 
-      {error && <p className="notice notice-error">扫描失败：{error}</p>}
-      {!error && !manifest && <p className="notice">正在扫描 benchmarks/ …</p>}
+      {error && (
+        <State tone="error" title="扫描失败" detail={error}>
+          <button type="button" className="btn" onClick={rescan}>
+            <Icon name="refresh" size={14} />
+            <span className="btn-label">重试</span>
+          </button>
+        </State>
+      )}
+      {!error && !manifest && <State tone="loading" title="正在扫描 benchmarks/ …" />}
       {manifest && choice && <Studio manifest={manifest} choice={choice} onChoice={setChoice} />}
       {manifest && !choice && (
-        <p className="notice notice-error">
-          benchmarks/catalog.txt 里没有可用的组合，或 benchmarks/ 下没有带 prompt.md 的项目。
-        </p>
+        <State
+          tone="error"
+          title="没有可用的组合"
+          detail="benchmarks/catalog.txt 里没有可用的组合，或 benchmarks/ 下没有带 prompt.md 的项目。"
+        />
       )}
+    </div>
+  );
+}
+
+function State({
+  tone,
+  title,
+  detail,
+  children,
+}: {
+  tone: 'error' | 'loading';
+  title: string;
+  detail?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <div className={`state state-${tone}`}>
+      <div className="state-card">
+        {tone === 'loading' ? <span className="state-spinner" aria-hidden="true" /> : <Icon name="alert" size={18} />}
+        <p className="state-title">{title}</p>
+        {detail && <p className="state-detail">{detail}</p>}
+        {children}
+      </div>
     </div>
   );
 }
@@ -147,11 +177,43 @@ function Studio({
   choice: Choice;
   onChoice: (next: Choice) => void;
 }) {
+  const { toast, visible, notify } = useToast();
+  const [query, setQuery] = useState('');
+  const [mode, setMode] = useState<FilterMode>('all');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const copiedTimer = useRef<number | undefined>(undefined);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => () => window.clearTimeout(copiedTimer.current), []);
+
   const selection = useMemo(() => selectCombo(manifest, choice), [manifest, choice]);
   const prompt = useMemo(
     () => (selection ? composeForSelection(manifest, selection) : ''),
     [manifest, selection],
   );
+
+  const keys = useMemo(() => catalogKeys(manifest.catalog), [manifest]);
+
+  // 只统计全集内的产出：清单外的目录会在顶栏的扫描提示里单独列出。
+  const coverage = useMemo(() => {
+    const known = new Set(keys);
+    const map = new Map<string, Set<string>>();
+    for (const benchmark of manifest.benchmarks) {
+      map.set(benchmark.id, new Set(benchmark.produced.filter((key) => known.has(key))));
+    }
+    return map;
+  }, [manifest, keys]);
+
+  const done = useMemo(() => coverage.get(choice.project) ?? new Set<string>(), [coverage, choice.project]);
+
+  const groups = useMemo(
+    () =>
+      groupCombos(manifest.catalog, query, (key) =>
+        mode === 'all' ? true : mode === 'done' ? done.has(key) : !done.has(key),
+      ),
+    [manifest, query, mode, done],
+  );
+  const visibleRows = useMemo(() => groups.flatMap((group) => group.rows), [groups]);
 
   const pick = useCallback(
     (patch: Partial<Choice>) => {
@@ -161,129 +223,187 @@ function Studio({
     [manifest, choice, onChoice],
   );
 
-  if (!selection) {
-    return <p className="notice notice-error">这个组合已不在全集里，请重新选择。</p>;
-  }
+  const pickRow = useCallback(
+    (row: ComboRow) => pick({ family: row.family, model: row.model, harness: row.harness }),
+    [pick],
+  );
 
-  const { family, model, harness } = selection;
-  const lineCount = prompt.split('\n').length;
+  const copy = useCallback(
+    (id: string, text: string, message: string) => {
+      void (async () => {
+        const ok = await writeClipboard(text);
+        if (!ok) {
+          notify('复制失败，请手动选择文本', 'error');
+          return;
+        }
+        setCopiedId(id);
+        window.clearTimeout(copiedTimer.current);
+        copiedTimer.current = window.setTimeout(() => setCopiedId(null), 1600);
+        notify(message);
+      })();
+    },
+    [notify],
+  );
 
-  const projectItems: PickerItem[] = manifest.benchmarks.map((item) => ({
-    id: item.id,
-    caption: `${item.produced.length}/${manifest.catalogSize}`,
-    title: `${item.id}\n已产出 ${item.produced.length} / 全集 ${manifest.catalogSize} 个组合`,
-  }));
-  const familyItems: PickerItem[] = manifest.catalog.map((item) => ({
-    id: item.id,
-    caption: `${item.models.length}`,
-    title: `${item.id}：${item.models.length} 个模型`,
-  }));
-  const modelItems: PickerItem[] = family.models.map((item) => ({
-    id: item.id,
-    caption: `${item.harnesses.length}`,
-    title: `${item.id}：${item.harnesses.length} 个 harness`,
-  }));
-  // harness 列不再显示文件数等信息，只列名字。
-  const harnessItems: PickerItem[] = model.harnesses.map((id) => ({ id }));
+  const copyFull = useCallback(() => {
+    if (!prompt) return;
+    copy('full', prompt, `已复制完整 prompt · ${prompt.length.toLocaleString('en-US')} 字符`);
+  }, [copy, prompt]);
 
-  const reveal = () => {
-    void fetch(`/api/reveal?path=${encodeURIComponent(selection.targetPath)}`).catch(
-      () => undefined,
-    );
-  };
+  const activeKey = selection?.key ?? '';
+  const projectIndex = manifest.benchmarks.findIndex((item) => item.id === choice.project);
+
+  // 键盘：↑↓ 切组合，←→ 切项目，/ 聚焦筛选，⌘/Ctrl + ↵ 复制完整 prompt。
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+        event.preventDefault();
+        copyFull();
+        return;
+      }
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+
+      const typing = isTypingTarget(event.target);
+      const inSearch = event.target === searchRef.current;
+
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        if (typing && !inSearch) return;
+        if (visibleRows.length === 0) return;
+        event.preventDefault();
+        const current = visibleRows.findIndex((row) => row.key === activeKey);
+        const step = event.key === 'ArrowDown' ? 1 : -1;
+        const nextIndex =
+          current === -1
+            ? step > 0
+              ? 0
+              : visibleRows.length - 1
+            : (current + step + visibleRows.length) % visibleRows.length;
+        const next = visibleRows[nextIndex];
+        if (next) pickRow(next);
+        return;
+      }
+
+      if (typing) return;
+
+      if (event.key === '/') {
+        event.preventDefault();
+        searchRef.current?.focus();
+        searchRef.current?.select();
+        return;
+      }
+
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        const total = manifest.benchmarks.length;
+        if (total === 0) return;
+        event.preventDefault();
+        const step = event.key === 'ArrowRight' ? 1 : -1;
+        const next = manifest.benchmarks[(Math.max(projectIndex, 0) + step + total) % total];
+        if (next) pick({ project: next.id });
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [copyFull, visibleRows, activeKey, pickRow, pick, manifest, projectIndex]);
+
+  const reveal = useCallback(() => {
+    if (!selection) return;
+    fetch(`/api/reveal?path=${encodeURIComponent(selection.targetPath)}`)
+      .then(async (response) => {
+        if (response.ok) return;
+        const body = (await response.json().catch(() => null)) as { error?: string } | null;
+        notify(body?.error ?? `访达打开失败（HTTP ${response.status}）`, 'error');
+      })
+      .catch(() => notify('访达打开失败', 'error'));
+  }, [selection, notify]);
+
+  const lineCount = prompt ? prompt.replace(/\n$/, '').split('\n').length : 0;
 
   return (
-    <main className="layout">
-      <Picker
-        title="项目"
-        hint={`${manifest.benchmarks.length}`}
-        items={projectItems}
+    <main className="workspace">
+      <ProjectList
+        benchmarks={manifest.benchmarks}
+        catalogKeys={keys}
+        coverage={coverage}
         activeId={choice.project}
         onPick={(id) => pick({ project: id })}
       />
-      <Picker
-        title="厂商"
-        hint={`${manifest.catalog.length}`}
-        items={familyItems}
-        activeId={family.id}
-        onPick={(id) => pick({ family: id })}
-      />
-      <Picker
-        title="模型"
-        hint={`${family.models.length}`}
-        items={modelItems}
-        activeId={model.id}
-        onPick={(id) => pick({ model: id })}
-      />
-      <Picker
-        title="Harness"
-        hint={`${model.harnesses.length}`}
-        items={harnessItems}
-        activeId={harness}
-        onPick={(id) => pick({ harness: id })}
+
+      <ComboList
+        groups={groups}
+        activeKey={activeKey}
+        done={done}
+        total={keys.length}
+        doneCount={done.size}
+        query={query}
+        onQuery={setQuery}
+        mode={mode}
+        onMode={setMode}
+        searchRef={searchRef}
+        onPick={pickRow}
       />
 
-      <section className="panel">
-        <header className="panel-head">
-          <div className="crumb">
-            <span className="crumb-part">{choice.project}</span>
-            <span className="crumb-sep">/</span>
-            <span className="crumb-part">{family.id}</span>
-            <span className="crumb-sep">/</span>
-            <span className="crumb-part">{model.id}</span>
-            <span className="crumb-sep">/</span>
-            <span className="crumb-part is-accent">{harness}</span>
-          </div>
-          {selection.exists ? (
-            <button type="button" className="btn btn-ghost" onClick={reveal}>
-              在访达中显示
-            </button>
-          ) : (
-            <span className="badge">此项目还没跑过这个组合</span>
-          )}
-        </header>
+      <section className="column column-doc" aria-label="Prompt">
+        {selection ? (
+          <>
+            <div className="doc-scroll">
+              <div className="doc-anim" key={`${selection.benchmarkId}:${selection.key}`}>
+                <PromptDocument
+                  repoRoot={manifest.repoRoot}
+                  selection={selection}
+                  sharedPrompt={manifest.sharedPrompt}
+                  projectIndex={Math.max(projectIndex, 0)}
+                  projectTotal={manifest.benchmarks.length}
+                  doneCount={done.size}
+                  total={keys.length}
+                  copiedId={copiedId}
+                  onCopy={copy}
+                  onReveal={reveal}
+                />
+              </div>
+            </div>
 
-        <div className="path-row">
-          <span className="path-label">target</span>
-          <code className="path-value">{selection.targetPath}</code>
-          <CopyButton text={selection.targetPath} label="复制" />
-        </div>
-
-        <div className="meta-row">
-          <span className={`badge${selection.exists ? ' badge-filled' : ''}`}>
-            {selection.exists ? '已有产出' : '尚无产出目录'}
-          </span>
-          <span className="meta">
-            全集 {manifest.catalogSize} 条 · 本项目已跑 {manifest.benchmarks.find((b) => b.id === choice.project)?.produced.length ?? 0} 条
-          </span>
-          <span className="meta">
-            {prompt.length} 字符 · {lineCount} 行
-          </span>
-        </div>
-
-        <PromptPreview
-          benchmarkId={selection.benchmarkId}
-          benchmarkPrompt={selection.benchmarkPrompt}
-          sharedPrompt={manifest.sharedPrompt}
-          targetPath={selection.targetPath}
-        />
-
-        <footer className="panel-foot">
-          <CopyButton variant="primary" text={prompt} label="复制完整 Prompt" />
-          <CopyButton text={selection.benchmarkPrompt} label="只复制项目 prompt" />
-          <CopyButton text={manifest.sharedPrompt} label="只复制 shared-prompt" />
-        </footer>
-
-        {manifest.warnings.length > 0 && (
-          <details className="warnings">
-            <summary>{manifest.warnings.length} 条目录结构提示</summary>
-            <ul>
-              {manifest.warnings.map((warning) => (
-                <li key={warning}>{warning}</li>
-              ))}
-            </ul>
-          </details>
+            <footer className="dock">
+              <div className="dock-stats">
+                <span>
+                  <b>{prompt.length.toLocaleString('en-US')}</b> 字符
+                </span>
+                <span className="dock-dot" aria-hidden="true" />
+                <span>
+                  <b>{lineCount}</b> 行
+                </span>
+              </div>
+              <div className="dock-actions">
+                <CopyButton
+                  size="sm"
+                  label="题目 prompt"
+                  copied={copiedId === 'benchmark'}
+                  onClick={() =>
+                    copy('benchmark', selection.benchmarkPrompt, '已复制题目 prompt（原文）')
+                  }
+                  title={`只复制 benchmarks/${selection.benchmarkId}/prompt.md 原文`}
+                />
+                <CopyButton
+                  size="sm"
+                  label="shared-prompt"
+                  copied={copiedId === 'shared'}
+                  onClick={() => copy('shared', manifest.sharedPrompt, '已复制 shared-prompt（原文）')}
+                  title={`只复制 shared-prompt.md 原文（保留 ${TARGET_PLACEHOLDER} 占位符）`}
+                />
+                <CopyButton
+                  variant="primary"
+                  label="复制完整 Prompt"
+                  copied={copiedId === 'full'}
+                  onClick={copyFull}
+                  kbd={[MOD_KEY, '↵']}
+                  title="题目 prompt + 空行 + 替换好路径的 shared-prompt"
+                />
+              </div>
+            </footer>
+          </>
+        ) : (
+          <State tone="error" title="这个组合已不在全集里" detail="请在左侧重新选择。" />
         )}
+        <Toast toast={toast} visible={visible} />
       </section>
     </main>
   );
