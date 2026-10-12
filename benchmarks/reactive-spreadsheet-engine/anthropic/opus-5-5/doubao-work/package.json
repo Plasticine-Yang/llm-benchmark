@@ -1,0 +1,35 @@
+{
+  "name": "reactive-spreadsheet-engine",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Compact reactive spreadsheet with a hand-written formula engine, dependency graph and persistent backend",
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c blue,green \"npm:dev:server\" \"npm:dev:web\"",
+    "dev:server": "tsx watch server/index.ts",
+    "dev:web": "vite",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "npm run typecheck && vite build && npm run build:server",
+    "build:server": "esbuild server/index.ts --bundle --platform=node --format=esm --target=node18 --outfile=dist-server/index.js",
+    "start": "node dist-server/index.js",
+    "test": "vitest run",
+    "test:e2e": "node tests/e2e.mjs"
+  },
+  "dependencies": {
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "concurrently": "^10.0.6",
+    "esbuild": "^0.28.2",
+    "puppeteer-core": "^25.13.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.4"
+  }
+}
