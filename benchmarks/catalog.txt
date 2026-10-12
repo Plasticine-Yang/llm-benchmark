@@ -25,5 +25,8 @@ deepseek/v41-flash   dsh
 glm/5-3-flash        opencode, zcode
 grok/4-5             grok-cli
 grok/4-6             grok-cli
-seed/2-1             lite, pro, turbo
-anthropic/opus-5-5   claude-code
+seed/2-1-lite        doubao-work
+seed/2-1-pro         doubao-work
+seed/2-1-turbo       doubao-work
+anthropic/opus-5-5   claude-code, doubao-work
+anthropic/haiku-5-5   claude-code, opencode
