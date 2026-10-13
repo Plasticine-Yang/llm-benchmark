@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multi-Robot Warehouse Scheduler</title>
+  <link rel="stylesheet" href="./src/style.css" />
+</head>
+<body>
+  <header>
+    <h1>Warehouse Robot Scheduler</h1>
+    <div class="controls">
+      <button id="btnRun" class="primary">Resume</button>
+      <button id="btnStep">Step</button>
+      <label class="inline">Seed <input id="seed" type="number" min="1" style="width:70px" /></label>
+      <button id="btnReset">Reset</button>
+      <label class="inline">Speed
+        <select id="speed"><option value="1000">1×slow</option><option value="500" selected>Normal</option><option value="250">Fast</option><option value="120">Very fast</option></select>
+      </label>
+      <button id="btnDisconnect" title="Drop the live stream and reconnect">Disconnect</button>
+    </div>
+    <div class="status" id="status"></div>
+  </header>
+  <main>
+    <section class="panel map-panel">
+      <div class="panel-head">
+        <h2>Warehouse map</h2>
+        <span class="hint">Click any floor cell to block / unblock it. Hover a robot for details.</span>
+      </div>
+      <div class="canvas-wrap"><canvas id="map"></canvas><div id="tip" class="tip"></div></div>
+      <div class="legend">
+        <span><i style="background:#c9a36b"></i>Shelf</span>
+        <span><i style="background:#2b6cb0"></i>Workstation</span>
+        <span><i style="background:#3a3f47"></i>Wall</span>
+        <span><i class="hatch"></i>Blocked</span>
+        <span><i style="background:#e6ecf2;border:1px dashed #9aa"></i>Parking</span>
+        <span><i style="background:#fff3c4"></i>1-cell bottleneck</span>
+        <span>◌ planned path · ⏸ waiting · ↯ detour</span>
+      </div>
+    </section>
+    <section class="panel side">
+      <div class="block">
+        <h2>New transport job</h2>
+        <form id="jobForm">
+          <label>Shelf <select id="fShelf"></select></label>
+          <label>Workstation <select id="fStation"></select></label>
+          <label>Priority <select id="fPriority"><option value="3">High</option><option value="2" selected>Normal</option><option value="1">Low</option></select></label>
+          <button class="primary" type="submit">Create job</button>
+        </form>
+        <div class="row">
+          <button id="btnDemo" title="4 jobs that cross the narrow corridors in opposite directions">Demo: 4 crossing jobs</button>
+          <button id="btnRandom">+5 random jobs</button>
+        </div>
+        <div id="formMsg" class="msg"></div>
+      </div>
+      <div class="block">
+        <h2>Robots</h2>
+        <div id="robots" class="list"></div>
+      </div>
+    </section>
+    <section class="panel bottom">
+      <div class="block">
+        <h2>Job queue <span id="jobCount" class="muted"></span></h2>
+        <div class="tablewrap"><table id="jobs"><thead><tr><th>Job</th><th>Shelf→WS</th><th>Prio</th><th>Status</th><th>Robot</th><th>Age</th><th>Detail</th></tr></thead><tbody></tbody></table></div>
+      </div>
+      <div class="block">
+        <h2>Event log</h2>
+        <div id="log" class="log"></div>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="./src/main.ts"></script>
+</body>
+</html>
