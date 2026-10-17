@@ -1,0 +1,41 @@
+{
+  "testedOn": "2026-10-18",
+  "browser": "Ego Chromium",
+  "productionBuild": "passed",
+  "productionUrl": "http://127.0.0.1:4174",
+  "productionConsoleErrors": [],
+  "productionCanvasCount": 1,
+  "visibleUiElementCount": 0,
+  "bodyText": "",
+  "externalRuntimeRequests": 0,
+  "interactionChecks": {
+    "mouseOrbit": "passed",
+    "rightButtonPan": "passed",
+    "wheelZoom": "passed",
+    "doubleClickReset": "passed; camera [16, 12.2, 20], target [0, 2.35, 0], zoom 1",
+    "touchPinch": "passed; zoom changed from 1 to 1.7862",
+    "portraitLayout": "passed at 390 x 844",
+    "automaticDoors": "passed; closed x [-1.034, -0.266], open x [-1.694, 0.394]"
+  },
+  "visualChecks": [
+    "Complete square base and clear L-shaped street",
+    "Warm stocked interior visible through front and side glass",
+    "Orthographic planar reflections follow the viewing angle",
+    "Rain, eave drops, instanced puddle rings and window streaks",
+    "Working traffic-light color changes",
+    "Service-alley detail visible after rotation",
+    "No people or screen-space interface"
+  ],
+  "performanceSample": {
+    "viewport": "1634 x 878",
+    "rendererPixelRatio": 1.4,
+    "sampleDurationMs": 1800,
+    "measuredFps": 63,
+    "note": "Local browser sample, not a guarantee for other devices."
+  },
+  "notes": [
+    "An earlier requestAnimationFrame-based performance probe timed out; the page remained responsive with no shader errors or context loss. A bounded timed frame-count sample then completed successfully.",
+    "All implementation files and screenshots were created inside the user-authorized output directory. No Blender or other benchmark implementations were used."
+  ],
+  "screenshots": ["final-overview.png", "alley-view.png", "mobile.png"]
+}
