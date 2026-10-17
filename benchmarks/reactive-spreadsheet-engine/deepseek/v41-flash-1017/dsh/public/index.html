@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#111b16" />
+    <meta
+      name="description"
+      content="Lattice is a compact reactive spreadsheet with live dependency tracking, incremental formula recalculation, and Excel-style errors."
+    />
+    <title>Lattice — Reactive Spreadsheet</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23111b16'/%3E%3Cpath d='M8 8h7v7H8zM17 8h7v7h-7zM8 17h7v7H8zM17 17h7v7h-7z' fill='%23c8f169'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="appbar">
+        <div class="brand" aria-label="Lattice home">
+          <span class="brand-mark" aria-hidden="true">
+            <i></i><i></i><i></i><i></i>
+          </span>
+          <span class="brand-name">Lattice</span>
+          <span class="brand-tag">reactive sheets</span>
+        </div>
+
+        <div class="engine-status" aria-label="Formula engine status">
+          <span class="pulse" aria-hidden="true"></span>
+          <span>Incremental engine</span>
+          <span class="engine-divider"></span>
+          <span id="headerStats">20 × 10 cells</span>
+        </div>
+
+        <div class="appbar-actions">
+          <div class="save-status" id="saveStatus" role="status" aria-live="polite">
+            <span class="save-dot"></span>
+            <span id="saveText">Loading workbook…</span>
+          </div>
+          <div class="history-actions" aria-label="Edit history">
+            <button class="icon-btn" id="undoBtn" type="button" title="Undo (⌘Z / Ctrl+Z)" aria-label="Undo" disabled>
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4.5 3 9l4.5 4.5M3.5 9H12a4.5 4.5 0 0 1 0 9H8" /></svg>
+            </button>
+            <button class="icon-btn" id="redoBtn" type="button" title="Redo (⇧⌘Z / Ctrl+Y)" aria-label="Redo" disabled>
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 4.5 4.5 4.5-4.5 4.5M16.5 9H8a4.5 4.5 0 0 0 0 9h4" /></svg>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div class="app-body">
+        <main class="sheet-panel">
+          <section class="formula-bar" aria-label="Formula bar">
+            <div class="name-box" id="nameBox" title="Active cell">A1</div>
+            <div class="formula-field">
+              <span class="fx" aria-hidden="true">fx</span>
+              <label class="sr-only" for="formulaInput">Formula for active cell</label>
+              <input
+                id="formulaInput"
+                class="formula-input"
+                type="text"
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+                placeholder="Enter a value or formula, e.g. =SUM(A1:A5)"
+              />
+            </div>
+            <button class="formula-toggle" id="formulaToggle" type="button" aria-pressed="false" title="Show raw cell contents">
+              <span class="toggle-glyph" aria-hidden="true">ƒ</span>
+              <span class="toggle-label">Formulas</span>
+            </button>
+          </section>
+
+          <section class="sheet-frame" aria-label="Workbook sheet">
+            <div class="sheet-head">
+              <div class="sheet-title">
+                <span class="sheet-tab-dot" aria-hidden="true"></span>
+                <strong>Sheet 1</strong>
+                <span class="sheet-meta">Live dependencies</span>
+              </div>
+              <div class="legend" aria-label="Dependency color legend">
+                <span class="legend-item"><i class="swatch swatch-source"></i>Referenced</span>
+                <span class="legend-item"><i class="swatch swatch-target"></i>Dependents</span>
+                <span class="legend-item"><i class="swatch swatch-cycle"></i>Cycle</span>
+              </div>
+            </div>
+
+            <div class="sheet-viewport" id="sheetViewport" tabindex="0" aria-label="Spreadsheet grid. Use arrow keys to move, Enter to edit.">
+              <table class="sheet" id="sheet" role="grid" aria-label="20 rows by 10 columns spreadsheet">
+                <thead id="sheetHead"></thead>
+                <tbody id="sheetBody"></tbody>
+              </table>
+            </div>
+
+            <div class="sheet-foot">
+              <div class="selection-status" id="selectionStatus">A1 selected</div>
+              <div class="recalc-status" id="recalcStatus">
+                <span class="recalc-spark" aria-hidden="true"></span>
+                <span>Ready</span>
+              </div>
+              <div class="key-hints" aria-label="Keyboard shortcuts">
+                <span><kbd>Enter</kbd> edit</span>
+                <span><kbd>↑↓←→</kbd> move</span>
+                <span><kbd>⌘C</kbd> copy</span>
+                <span><kbd>⌘Z</kbd> undo</span>
+              </div>
+            </div>
+          </section>
+        </main>
+
+        <aside class="inspector" id="inspector" aria-label="Cell inspector">
+          <div class="inspector-head">
+            <div>
+              <span class="eyebrow">Inspector</span>
+              <h2>Cell detail</h2>
+            </div>
+            <span class="inspector-live"><i></i>Live</span>
+          </div>
+          <div class="inspector-body" id="inspectorBody"></div>
+          <div class="inspector-foot">
+            <div class="legend-title">Graph legend</div>
+            <div class="legend-stack">
+              <span><i class="swatch swatch-source"></i>Inputs this cell reads</span>
+              <span><i class="swatch swatch-target"></i>Cells that recalculate from it</span>
+              <span><i class="swatch swatch-cycle"></i>Circular reference</span>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="true"></div>
+    <script type="module" src="/js/app.js"></script>
+  </body>
+</html>
