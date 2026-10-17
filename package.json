@@ -9,5 +9,8 @@
     "typecheck": "pnpm --filter bench-studio typecheck",
     "prompt": "pnpm --filter bench-studio --silent prompt",
     "bench": "pnpm --filter bench-studio --silent bench"
+  },
+  "dependencies": {
+    "three": "0.170.0"
   }
 }
