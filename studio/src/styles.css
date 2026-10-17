@@ -919,6 +919,9 @@ pre {
 .search-clear {
   display: grid;
   place-items: center;
+  /* 必须清掉 UA 给 button 的 padding（1px 6px）：20px 的按钮扣掉左右各 6px 只剩 8px 内容盒，
+     12px 的图标一溢出，Chrome 就不再居中，会贴着左内边距排，看着偏右。 */
+  padding: 0;
   width: 20px;
   height: 20px;
   border: 0;
