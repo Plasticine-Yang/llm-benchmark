@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "kind": "static",
+  "entry": "rainy-night-convenience-diorama.html",
+  "notes": "单个自包含 HTML（约 44KB），Three.js 走 jsdelivr CDN，目录内无其它资源，直接托管即可。"
+}

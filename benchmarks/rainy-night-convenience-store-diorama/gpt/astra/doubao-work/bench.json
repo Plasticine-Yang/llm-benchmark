@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "kind": "static",
+  "entry": "index.html",
+  "notes": "单文件自包含：Three.js 与全部场景代码内联在 index.html（约 680KB），只引用 data URI 图标，不依赖 vendor/、.qa-deps/ 或 CDN，直接托管即可。"
+}

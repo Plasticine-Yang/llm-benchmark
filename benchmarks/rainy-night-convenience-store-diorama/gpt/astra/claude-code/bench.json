@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "kind": "process",
+  "setup": [
+    { "run": "npm install --ignore-scripts", "unless": "node_modules" },
+    { "run": "npm run build", "unless": "dist/index.html" }
+  ],
+  "start": "node_modules/.bin/vite preview --host 127.0.0.1 --port {port} --strictPort",
+  "url": "http://127.0.0.1:{port}/",
+  "notes": "纯前端 Vite 项目（无后端），生产预览模式。README 指定 npm install --ignore-scripts；dist/ 已构建，vite.config.js 里 base 为 ./。命令行 --port 覆盖配置，避免占用固定端口。"
+}

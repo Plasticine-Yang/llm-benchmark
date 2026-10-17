@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "kind": "static",
+  "entry": "雨夜便利店微缩景观.html",
+  "notes": "单个自包含 HTML（约 660KB，文件名含中文），Three.js 与 OrbitControls 走 jsdelivr CDN，目录内无其它资源，直接托管即可。"
+}
