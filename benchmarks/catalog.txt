@@ -22,6 +22,7 @@ gpt/6-sol            codex
 gpt/6-luna           codex
 deepseek/v4-flash    dsh, opencode, web
 deepseek/v41-flash   dsh
+deepseek/v41-flash-1017 dsh
 glm/5-3-flash        opencode, zcode
 grok/4-5             grok-cli
 grok/4-6             grok-cli
