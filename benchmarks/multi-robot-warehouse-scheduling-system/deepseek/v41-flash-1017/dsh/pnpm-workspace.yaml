@@ -1,0 +1,10 @@
+packages:
+  - "."
+
+# Use Rollup's WebAssembly build so production builds are reproducible
+# across platforms and do not depend on a native addon.
+overrides:
+  rollup: "npm:@rollup/wasm-node@4.64.7"
+
+# Avoid an implicit install/verification pass before every pnpm run script.
+verifyDepsBeforeRun: false
