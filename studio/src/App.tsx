@@ -4,6 +4,7 @@ import { ComboList } from './components/ComboList';
 import type { FilterMode } from './components/ComboList';
 import { CopyButton } from './components/CopyButton';
 import { Icon } from './components/Icon';
+import { NewBenchmarkDialog } from './components/NewBenchmarkDialog';
 import { ProjectList } from './components/ProjectList';
 import { PreviewPane } from './components/PreviewPane';
 import { PromptDocument } from './components/PromptDocument';
@@ -141,6 +142,13 @@ export function App() {
 
   const rescan = useCallback(() => setReloadToken((token) => token + 1), []);
 
+  /** 新建 benchmark 后：记下要选中的项目，重新扫盘，扫完由 resolveChoice 选中它。 */
+  const openProject = useCallback((project: string) => {
+    setChoice((prev) => (prev ? { ...prev, project } : prev));
+    setView('prompt');
+    setReloadToken((token) => token + 1);
+  }, []);
+
   return (
     <div className="app">
       <TopBar
@@ -167,6 +175,7 @@ export function App() {
           onChoice={setChoice}
           view={view}
           onView={setView}
+          onOpenProject={openProject}
         />
       )}
       {manifest && !choice && (
@@ -252,14 +261,17 @@ function Studio({
   onChoice,
   view,
   onView,
+  onOpenProject,
 }: {
   manifest: Manifest;
   choice: Choice;
   onChoice: (next: Choice) => void;
   view: View;
   onView: (view: View) => void;
+  onOpenProject: (project: string) => void;
 }) {
   const { toast, visible, notify } = useToast();
+  const [creating, setCreating] = useState(false);
   const [query, setQuery] = useState('');
   const [mode, setMode] = useState<FilterMode>('all');
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -416,6 +428,12 @@ function Studio({
 
       if (typing) return;
 
+      if (event.key === 'n') {
+        event.preventDefault();
+        setCreating(true);
+        return;
+      }
+
       if (event.key === 'p' || event.key === 'v') {
         event.preventDefault();
         onView(event.key === 'p' ? 'prompt' : 'preview');
@@ -477,7 +495,20 @@ function Studio({
         coverage={coverage}
         activeId={choice.project}
         onPick={(id) => pick({ project: id })}
+        onCreate={() => setCreating(true)}
       />
+
+      {creating && (
+        <NewBenchmarkDialog
+          existing={manifest.benchmarks.map((item) => item.id)}
+          onClose={() => setCreating(false)}
+          onCreated={(id, chars) => {
+            setCreating(false);
+            notify(`已创建 benchmarks/${id}/prompt.md · ${chars.toLocaleString('en-US')} 字符`);
+            onOpenProject(id);
+          }}
+        />
+      )}
 
       <ComboList
         groups={groups}

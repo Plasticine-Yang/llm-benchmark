@@ -1,5 +1,7 @@
-import { existsSync, statSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { relative, resolve, sep } from 'node:path';
+import { createBenchmark } from '../server/create.ts';
 import { findRepoRoot } from '../server/paths.ts';
 import { Runner } from '../server/runner.ts';
 import { scanManifest } from '../server/scan.ts';
@@ -9,6 +11,8 @@ import { SPEC_FILE } from '../src/shared/launch.ts';
 /**
  * 启动规范的命令行入口，给 bench-launch skill 和手动排查用：
  *
+ *   pnpm bench new    <项目名> [文件]      新建 benchmark：写入 benchmarks/<项目名>/prompt.md
+ *                                         prompt 来源依次是：文件参数 → 管道输入 → 剪贴板（--clipboard）
  *   pnpm bench status [project]          列出所有产出及其 bench.json 状态
  *   pnpm bench check  <产出>              只校验 bench.json，不启动
  *   pnpm bench run    <产出> [--keep]     按 bench.json 真实启动 → 等就绪 → 抓首页 → 停止
@@ -32,6 +36,7 @@ function usage(): never {
   fail(
     [
       '用法:',
+      '  pnpm bench new    <项目名> [文件]      新建 benchmark（prompt 来自文件 / 管道 / --clipboard）',
       '  pnpm bench status [project]          列出产出与 bench.json 状态',
       '  pnpm bench check  <产出>              校验 bench.json',
       '  pnpm bench run    <产出> [--keep]     真实启动并验证，默认验证后停止',
@@ -187,11 +192,72 @@ async function run(target: string, keep: boolean) {
   process.exit(0);
 }
 
+/** 读管道输入；终端直接敲命令（没有管道）时返回 null，避免卡住等输入。 */
+function readStdin(): string | null {
+  if (process.stdin.isTTY) return null;
+  try {
+    return readFileSync(0, 'utf8');
+  } catch {
+    return null;
+  }
+}
+
+function readClipboard(): string {
+  const [cmd, args] =
+    process.platform === 'darwin'
+      ? ['pbpaste', []]
+      : process.platform === 'win32'
+        ? ['powershell', ['-NoProfile', '-Command', 'Get-Clipboard -Raw']]
+        : ['xclip', ['-selection', 'clipboard', '-o']];
+  try {
+    return execFileSync(cmd as string, args as string[], { encoding: 'utf8' });
+  } catch (error) {
+    fail(`读取剪贴板失败：${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+function create(id: string | undefined, file: string | undefined, fromClipboard: boolean) {
+  if (!id) usage();
+  let prompt: string | null = null;
+  let source = '';
+  if (file) {
+    const path = resolve(userCwd, file);
+    if (!existsSync(path) || !statSync(path).isFile()) fail(`找不到 prompt 文件：${file}`, 2);
+    prompt = readFileSync(path, 'utf8');
+    source = file;
+  } else if (fromClipboard) {
+    prompt = readClipboard();
+    source = '剪贴板';
+  } else {
+    prompt = readStdin();
+    source = '管道输入';
+  }
+  if (prompt === null) {
+    fail(
+      [
+        '没有拿到 prompt。三种给法任选其一：',
+        `  pnpm bench new ${id} path/to/prompt.md`,
+        `  pbpaste | pnpm bench new ${id}`,
+        `  pnpm bench new ${id} --clipboard`,
+      ].join('\n'),
+      2,
+    );
+  }
+  const result = createBenchmark(repoRoot, id, prompt);
+  if (!result.ok) fail(`✗ ${result.error}`);
+  console.log(`✓ 已创建 ${result.promptPath}（来自${source}，${result.chars.toLocaleString('en-US')} 字符）`);
+  console.log('Studio 顶栏点刷新就能看到。拼好的 prompt：');
+  console.log(`  pnpm prompt ${id} <family> <model> <harness>`);
+}
+
 const [command, ...rest] = process.argv.slice(2).filter(Boolean);
 const flags = new Set(rest.filter((arg) => arg.startsWith('--')));
 const args = rest.filter((arg) => !arg.startsWith('--'));
 
 switch (command) {
+  case 'new':
+    create(args[0], args[1], flags.has('--clipboard'));
+    break;
   case 'status':
     status(args[0]);
     break;

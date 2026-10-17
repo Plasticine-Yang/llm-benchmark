@@ -24,6 +24,7 @@ pnpm dev        # http://127.0.0.1:5274
 | `pnpm bench status [project]` | 列出所有产出及其 `bench.json` 状态 |
 | `pnpm bench check <产出>` | 只校验 `bench.json` |
 | `pnpm bench run <产出> [--keep]` | 真实启动 → 等就绪 → 抓首页 → 停止；`--keep` 保持运行 |
+| `pnpm bench new <项目名> [文件]` | 新建 benchmark：写入 `benchmarks/<项目名>/prompt.md`，prompt 来自文件 / 管道 / `--clipboard` 剪贴板 |
 | `pnpm prompt pelican gpt astra codex` | 打印拼好的 prompt |
 | `pnpm typecheck` / `pnpm build` | 类型检查 / 产线构建 |
 
@@ -38,6 +39,13 @@ pnpm dev        # http://127.0.0.1:5274
         ↓
 Studio 顶栏点刷新 → 预览页一键启动 / 查看 / 停止
 ```
+
+## 新建 benchmark
+
+一个 benchmark 就是 `benchmarks/<项目名>/prompt.md` 一个文件，不需要动 `catalog.txt`。两种录入方式，背后是同一份校验和写入逻辑（[server/create.ts](server/create.ts)）：
+
+* **Studio**：项目栏标题旁的 `+`（或按 `N`）打开「新建 benchmark」弹窗，粘贴题目原文、确认项目名（英文首行标题会自动推荐一个，可改），创建后自动选中新项目并停在 Prompt 页。
+* **命令行**：`pnpm bench new <项目名> [prompt 文件]`，不带文件时依次尝试管道输入和 `--clipboard`（macOS 走 `pbpaste`）。项目名只能用小写字母、数字和单个连字符，重名会直接拒绝。
 
 ## 数据约定
 
@@ -91,6 +99,7 @@ catalog.txt、拼装规则与原来一致：页面上的「组合」列完全由
 | `↑` / `↓` | 切换组合 |
 | `←` / `→` | 切换项目 |
 | `P` / `V` | 切到 Prompt / 预览 |
+| `N` | 打开「新建 benchmark」弹窗（弹窗内 `⌘ ↵` / `Ctrl ↵` 提交） |
 | `R` / `S` | 预览页：启动 / 停止当前产出 |
 | `/` | 聚焦筛选框，`Esc` 清空 |
 | `⌘ ↵` / `Ctrl ↵` | 复制完整 Prompt |
@@ -104,6 +113,7 @@ catalog.txt、拼装规则与原来一致：页面上的「组合」列完全由
 | `GET /api/manifest` | 每次重新扫盘：全集、覆盖情况、prompt 原文、各产出的启动规范状态 |
 | `GET /api/prompt?project=&family=&model=&harness=` | 纯文本 prompt |
 | `GET /api/reveal?path=` | 在访达中定位（只允许 `benchmarks/` 内的路径） |
+| `POST /api/benchmark/create` | 新建 `benchmarks/<id>/prompt.md`，body `{id, prompt}`；必须带 `X-Bench-Studio: 1` 请求头 |
 | `GET /api/runs` | 全部运行状态 |
 | `POST /api/run/start?id=` / `POST /api/run/stop?id=` | 启动 / 停止；必须带 `X-Bench-Studio: 1` 请求头 |
 | `GET /api/run/logs?id=&after=` | 增量日志 |

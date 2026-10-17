@@ -4,6 +4,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { extname, join, resolve, sep } from 'node:path';
 import type { Connect, Plugin } from 'vite';
 import { composeForSelection, selectCombo } from '../src/shared/compose.ts';
+import { createBenchmark } from './create.ts';
 import { findRepoRoot } from './paths.ts';
 import { Runner } from './runner.ts';
 import { isInsideBenchmarks, scanManifest } from './scan.ts';
@@ -97,6 +98,31 @@ function isStudioWrite(req: IncomingMessage, res: ServerResponse): boolean {
   return true;
 }
 
+/** 读 JSON 请求体，超过上限就放弃。 */
+function readJsonBody(req: IncomingMessage, limit = 512 * 1024): Promise<unknown> {
+  return new Promise((done, reject) => {
+    const chunks: Buffer[] = [];
+    let size = 0;
+    req.on('data', (chunk: Buffer) => {
+      size += chunk.length;
+      if (size > limit) {
+        reject(new Error('请求体太大'));
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on('end', () => {
+      try {
+        done(JSON.parse(Buffer.concat(chunks).toString('utf8')));
+      } catch {
+        reject(new Error('请求体不是合法 JSON'));
+      }
+    });
+    req.on('error', reject);
+  });
+}
+
 function queryOf(req: IncomingMessage): URLSearchParams {
   return new URL(req.url ?? '/', 'http://localhost').searchParams;
 }
@@ -152,6 +178,7 @@ function servePreview(rawUrl: string, res: ServerResponse, repoRoot: string) {
  *   GET  /api/manifest                                 实时扫盘：全集、覆盖情况、各产出的启动规范
  *   GET  /api/prompt?project&family&model&harness       文字版 prompt
  *   GET  /api/reveal?path                               在访达里定位产出目录
+ *   POST /api/benchmark/create   {id, prompt}           新建 benchmarks/<id>/prompt.md
  *   GET  /api/runs                                      全部运行状态
  *   POST /api/run/start?id                              按 bench.json 启动
  *   POST /api/run/stop?id                               停止
@@ -210,6 +237,25 @@ export function benchStudioPlugin(): Plugin {
       } catch (error) {
         sendJson(res, 500, { error: error instanceof Error ? error.message : String(error) });
       }
+    });
+
+    middlewares.use('/api/benchmark/create', (req, res) => {
+      if (!isStudioWrite(req, res)) return;
+      void (async () => {
+        try {
+          const body = (await readJsonBody(req)) as { id?: unknown; prompt?: unknown } | null;
+          const id = typeof body?.id === 'string' ? body.id.trim() : '';
+          const prompt = typeof body?.prompt === 'string' ? body.prompt : '';
+          const result = createBenchmark(repoRoot, id, prompt);
+          if (!result.ok) {
+            sendJson(res, 400, { error: result.error });
+            return;
+          }
+          sendJson(res, 201, { id: result.id, promptPath: result.promptPath, chars: result.chars });
+        } catch (error) {
+          sendJson(res, 400, { error: error instanceof Error ? error.message : String(error) });
+        }
+      })();
     });
 
     middlewares.use('/api/runs', (_req, res) => sendJson(res, 200, runner.list()));

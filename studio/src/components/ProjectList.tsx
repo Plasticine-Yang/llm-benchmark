@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { breakable, cx, pad2 } from '../lib/text';
 import type { Benchmark } from '../types';
+import { Icon } from './Icon';
 
 type Props = {
   benchmarks: Benchmark[];
@@ -10,9 +11,11 @@ type Props = {
   coverage: Map<string, Set<string>>;
   activeId: string;
   onPick: (id: string) => void;
+  /** 打开「新建 benchmark」弹窗 */
+  onCreate: () => void;
 };
 
-export function ProjectList({ benchmarks, catalogKeys, coverage, activeId, onPick }: Props) {
+export function ProjectList({ benchmarks, catalogKeys, coverage, activeId, onPick, onCreate }: Props) {
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -29,6 +32,15 @@ export function ProjectList({ benchmarks, catalogKeys, coverage, activeId, onPic
       <header className="column-head">
         <h2 className="column-title">项目</h2>
         <span className="column-sub">{benchmarks.length} 个 benchmark</span>
+        <button
+          type="button"
+          className="icon-btn column-add"
+          onClick={onCreate}
+          title="新建 benchmark（N）"
+          aria-label="新建 benchmark"
+        >
+          <Icon name="plus" size={14} />
+        </button>
       </header>
 
       <div className="column-scroll" ref={listRef}>
