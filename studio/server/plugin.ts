@@ -243,10 +243,11 @@ export function benchStudioPlugin(): Plugin {
       if (!isStudioWrite(req, res)) return;
       void (async () => {
         try {
-          const body = (await readJsonBody(req)) as { id?: unknown; prompt?: unknown } | null;
+          const body = (await readJsonBody(req)) as { id?: unknown; prompt?: unknown; title?: unknown } | null;
           const id = typeof body?.id === 'string' ? body.id.trim() : '';
           const prompt = typeof body?.prompt === 'string' ? body.prompt : '';
-          const result = createBenchmark(repoRoot, id, prompt);
+          const title = typeof body?.title === 'string' ? body.title : undefined;
+          const result = createBenchmark(repoRoot, id, prompt, title);
           if (!result.ok) {
             sendJson(res, 400, { error: result.error });
             return;

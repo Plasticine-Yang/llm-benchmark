@@ -84,10 +84,10 @@ export function ComboList({
   const filtered = query.trim() !== '' || mode !== 'all';
 
   return (
-    <section className="column column-combos" aria-label="组合">
-      <header className="column-head">
-        <h2 className="column-title">组合</h2>
-        <span className="column-sub">厂商 / 模型 / Harness</span>
+    <div className="combos-area" aria-label="组合">
+      <header className="combos-head">
+        <h2 className="combos-title">组合</h2>
+        <span className="combos-sub">厂商 / 模型 / Harness</span>
       </header>
 
       <div className="combo-tools">
@@ -226,6 +226,6 @@ export function ComboList({
         </span>
 
       </footer>
-    </section>
+    </div>
   );
 }

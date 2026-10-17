@@ -64,6 +64,18 @@ const PATHS = {
   ),
   chevronUp: <path d="m4.5 10 3.5-3.5 3.5 3.5" />,
   chevronDown: <path d="m4.5 6 3.5 3.5 3.5-3.5" />,
+  panelLeft: (
+    <>
+      <rect x="2.5" y="3.5" width="11" height="9" rx="1.5" />
+      <path d="M6 3.5v9" />
+    </>
+  ),
+  panelRight: (
+    <>
+      <rect x="2.5" y="3.5" width="11" height="9" rx="1.5" />
+      <path d="M10 3.5v9" />
+    </>
+  ),
 } as const;
 
 export type IconName = keyof typeof PATHS;

@@ -27,6 +27,22 @@ function listDirs(dir: string): string[] {
     .sort((a, b) => a.localeCompare(b, 'en'));
 }
 
+/** 读 benchmarks/<id>/meta.json 里的展示名；文件不存在、JSON 不合法或 title 为空都回退到目录名。 */
+function readBenchmarkTitle(projectDir: string, fallback: string): string {
+  const metaPath = join(projectDir, 'meta.json');
+  if (!existsSync(metaPath)) return fallback;
+  try {
+    const parsed = JSON.parse(readFileSync(metaPath, 'utf8')) as unknown;
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      const title = (parsed as { title?: unknown }).title;
+      if (typeof title === 'string' && title.trim()) return title.trim();
+    }
+  } catch {
+    /* meta.json 坏了不致命，回退目录名 */
+  }
+  return fallback;
+}
+
 /** 该目录里直接放着的文件（不含子目录里的）。 */
 function directFiles(dir: string): string[] {
   return readDir(dir)
@@ -118,6 +134,7 @@ export function scanManifest(startDir: string = process.cwd()): Manifest {
 
     benchmarks.push({
       id: projectId,
+      title: readBenchmarkTitle(projectDir, projectId),
       promptPath,
       prompt: readFileSync(promptPath, 'utf8'),
       produced,

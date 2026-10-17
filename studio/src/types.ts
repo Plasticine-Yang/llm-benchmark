@@ -25,6 +25,8 @@ export type Harness = {
 
 export type Benchmark = {
   id: string;
+  /** 展示名，来自 meta.json 的 title；没有 meta.json 时等于 id */
+  title: string;
   promptPath: string;
   prompt: string;
   /** 该项目已有的产出，元素形如 "gpt/astra/codex" */

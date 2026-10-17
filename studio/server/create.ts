@@ -17,19 +17,34 @@ export function existingProjects(repoRoot: string): string[] {
   }
 }
 
+/** 展示名上限，和 prompt 一样防止误粘贴超长内容。 */
+const TITLE_MAX_CHARS = 80;
+
 /**
  * 新建一个 benchmark：创建 benchmarks/<id>/ 并写入 prompt.md。
  * Studio 的「新建 benchmark」弹窗和 `pnpm bench new` 都走这里，只此一处实现。
  * 目录已存在就拒绝，不会覆盖任何已有内容。
+ *
+ * title 可选：非空时同时写入 meta.json，作为左侧列表的展示名。
  */
-export function createBenchmark(repoRoot: string, id: string, prompt: string): CreateResult {
+export function createBenchmark(
+  repoRoot: string,
+  id: string,
+  prompt: string,
+  title?: string,
+): CreateResult {
   const idError = validateProjectId(id, existingProjects(repoRoot));
   if (idError) return { ok: false, error: idError };
   const promptError = validatePrompt(prompt);
   if (promptError) return { ok: false, error: promptError };
+  const cleanTitle = title?.trim() ?? '';
+  if (cleanTitle.length > TITLE_MAX_CHARS) {
+    return { ok: false, error: `展示名最长 ${TITLE_MAX_CHARS} 个字符` };
+  }
 
   const dir = join(repoRoot, 'benchmarks', id);
   const promptPath = join(dir, 'prompt.md');
+  const metaPath = join(dir, 'meta.json');
   const content = normalizePrompt(prompt);
   try {
     // 不带 recursive：目录已存在（比如并发创建）时直接抛错，不会落到别人的目录里
@@ -42,6 +57,12 @@ export function createBenchmark(repoRoot: string, id: string, prompt: string): C
   }
   try {
     writeFileSync(promptPath, content, { encoding: 'utf8', flag: 'wx' });
+    if (cleanTitle) {
+      writeFileSync(metaPath, `${JSON.stringify({ title: cleanTitle }, null, 2)}\n`, {
+        encoding: 'utf8',
+        flag: 'wx',
+      });
+    }
   } catch (error) {
     try {
       rmdirSync(dir);

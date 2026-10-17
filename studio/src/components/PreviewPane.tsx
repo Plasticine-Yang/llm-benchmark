@@ -13,6 +13,8 @@ type Props = {
   launch: LaunchInfo | undefined;
   run: RunState | undefined;
   busy: boolean;
+  /** 当前 benchmark 的展示名（meta.json title） */
+  projectTitle: string;
   onStart: () => void;
   onStop: () => void;
   onRestart: () => void;
@@ -101,6 +103,7 @@ export function PreviewPane({
   launch,
   run,
   busy,
+  projectTitle,
   onStart,
   onStop,
   onRestart,
@@ -222,7 +225,8 @@ export function PreviewPane({
     <div className="preview">
       <header className="preview-bar">
         <div className="preview-id">
-          <span className="preview-project" title={selection.benchmarkId}>{selection.benchmarkId}</span>
+          <span className="preview-project" title={selection.benchmarkId}>{projectTitle}</span>
+          <span className="preview-slug" title={selection.benchmarkId}>{selection.benchmarkId}</span>
           <span className="preview-combo">
             {selection.family.id}/{selection.model.id}/<b>{selection.harness}</b>
           </span>

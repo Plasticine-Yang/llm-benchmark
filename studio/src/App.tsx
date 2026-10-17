@@ -5,7 +5,7 @@ import type { FilterMode } from './components/ComboList';
 import { CopyButton } from './components/CopyButton';
 import { Icon } from './components/Icon';
 import { NewBenchmarkDialog } from './components/NewBenchmarkDialog';
-import { ProjectList } from './components/ProjectList';
+import { NavPanel } from './components/ProjectList';
 import { PreviewPane } from './components/PreviewPane';
 import { PromptDocument } from './components/PromptDocument';
 import { Toast, useToast } from './components/Toast';
@@ -23,6 +23,22 @@ import type { Manifest } from './types';
 
 const STORAGE_KEY = 'bench-studio/selection';
 const VIEW_KEY = 'bench-studio/view';
+const NAV_KEY = 'bench-studio/nav-collapsed';
+
+function readNavCollapsed(): boolean {
+  try {
+    return window.localStorage.getItem(NAV_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+/** URL hash 里的 ?nav=collapsed/open 优先于本地记忆，方便分享固定布局的链接。 */
+function parseNavCollapsed(): boolean | null {
+  const query = window.location.hash.split('?')[1] ?? '';
+  const value = new URLSearchParams(query).get('nav');
+  return value === 'collapsed' ? true : value === 'open' ? false : null;
+}
 
 export type View = 'prompt' | 'preview';
 
@@ -88,7 +104,16 @@ export function App() {
   const [loading, setLoading] = useState(true);
   const [reloadToken, setReloadToken] = useState(0);
   const [view, setView] = useState<View>(() => parseView() ?? readStoredView());
+  const [navCollapsed, setNavCollapsed] = useState<boolean>(() => parseNavCollapsed() ?? readNavCollapsed());
   const [theme, toggleTheme] = useTheme();
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(NAV_KEY, navCollapsed ? '1' : '0');
+    } catch {
+      /* 隐私模式下写不进去，忽略 */
+    }
+  }, [navCollapsed]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -176,6 +201,8 @@ export function App() {
           view={view}
           onView={setView}
           onOpenProject={openProject}
+          navCollapsed={navCollapsed}
+          onToggleNav={() => setNavCollapsed((value) => !value)}
         />
       )}
       {manifest && !choice && (
@@ -262,6 +289,8 @@ function Studio({
   view,
   onView,
   onOpenProject,
+  navCollapsed,
+  onToggleNav,
 }: {
   manifest: Manifest;
   choice: Choice;
@@ -269,6 +298,8 @@ function Studio({
   view: View;
   onView: (view: View) => void;
   onOpenProject: (project: string) => void;
+  navCollapsed: boolean;
+  onToggleNav: () => void;
 }) {
   const { toast, visible, notify } = useToast();
   const [creating, setCreating] = useState(false);
@@ -488,15 +519,34 @@ function Studio({
   const lineCount = prompt ? prompt.replace(/\n$/, '').split('\n').length : 0;
 
   return (
-    <main className="workspace">
-      <ProjectList
+    <main className={cx('workspace', navCollapsed && 'is-nav-collapsed')}>
+      <NavPanel
         benchmarks={manifest.benchmarks}
         catalogKeys={keys}
         coverage={coverage}
         activeId={choice.project}
         onPick={(id) => pick({ project: id })}
         onCreate={() => setCreating(true)}
-      />
+        collapsed={navCollapsed}
+        onToggle={onToggleNav}
+      >
+        <ComboList
+          groups={groups}
+          activeKey={activeKey}
+          done={done}
+          total={keys.length}
+          doneCount={done.size}
+          query={query}
+          onQuery={setQuery}
+          mode={mode}
+          onMode={setMode}
+          searchRef={searchRef}
+          onPick={pickRow}
+          launch={benchmark?.launch ?? {}}
+          runs={runs}
+          project={choice.project}
+        />
+      </NavPanel>
 
       {creating && (
         <NewBenchmarkDialog
@@ -509,23 +559,6 @@ function Studio({
           }}
         />
       )}
-
-      <ComboList
-        groups={groups}
-        activeKey={activeKey}
-        done={done}
-        total={keys.length}
-        doneCount={done.size}
-        query={query}
-        onQuery={setQuery}
-        mode={mode}
-        onMode={setMode}
-        searchRef={searchRef}
-        onPick={pickRow}
-        launch={benchmark?.launch ?? {}}
-        runs={runs}
-        project={choice.project}
-      />
 
       <section className="column column-doc" aria-label={view === 'prompt' ? 'Prompt' : '预览'}>
         <nav className="doc-tabs" role="tablist" aria-label="视图">
@@ -561,6 +594,7 @@ function Studio({
             launch={launch}
             run={run}
             busy={busy}
+            projectTitle={benchmark?.title ?? choice.project}
             onStart={() => runAction('start')}
             onStop={() => runAction('stop')}
             onRestart={() => runAction('restart')}
@@ -575,6 +609,7 @@ function Studio({
                   repoRoot={manifest.repoRoot}
                   selection={selection}
                   sharedPrompt={manifest.sharedPrompt}
+                  benchmarkTitle={benchmark?.title ?? choice.project}
                   projectIndex={Math.max(projectIndex, 0)}
                   projectTotal={manifest.benchmarks.length}
                   doneCount={done.size}

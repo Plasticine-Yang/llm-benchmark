@@ -17,11 +17,15 @@ type Props = {
  * 若弹窗常驻 DOM，项目名输入框会被塞进旧值而 React 状态是空的（看着有名、校验却报空）。
  * 打开时才挂载，加载阶段没有这个 input，就不会被恢复。
  */
-async function createBenchmark(id: string, prompt: string): Promise<{ id: string; chars: number }> {
+async function createBenchmark(
+  id: string,
+  prompt: string,
+  title: string,
+): Promise<{ id: string; chars: number }> {
   const response = await fetch('/api/benchmark/create', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Bench-Studio': '1' },
-    body: JSON.stringify({ id, prompt }),
+    body: JSON.stringify({ id, prompt, title }),
   });
   const body = (await response.json().catch(() => null)) as { id?: string; chars?: number; error?: string } | null;
   if (!response.ok || !body?.id) throw new Error(body?.error ?? `HTTP ${response.status}`);
@@ -37,6 +41,8 @@ export function NewBenchmarkDialog({ existing, onClose, onCreated }: Props) {
   const promptRef = useRef<HTMLTextAreaElement>(null);
   const [prompt, setPrompt] = useState('');
   const [id, setId] = useState('');
+  /** 左侧列表里显示的中文/可读名称，可留空（留空就显示目录名） */
+  const [title, setTitle] = useState('');
   /** 用户亲手改过项目名后，就不再根据 prompt 自动改写 */
   const [idTouched, setIdTouched] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -65,7 +71,7 @@ export function NewBenchmarkDialog({ existing, onClose, onCreated }: Props) {
     setServerError(null);
     if (idError || promptError || saving) return;
     setSaving(true);
-    createBenchmark(effectiveId, prompt)
+    createBenchmark(effectiveId, prompt, title.trim())
       .then((result) => onCreated(result.id, result.chars))
       .catch((error: unknown) => setServerError(error instanceof Error ? error.message : String(error)))
       .finally(() => setSaving(false));
@@ -164,6 +170,22 @@ export function NewBenchmarkDialog({ existing, onClose, onCreated }: Props) {
               {!idTouched && suggested ? '已从首行标题推荐，可以改。' : '小写字母、数字和连字符，会成为目录名和组合 id 的第一段。'}
             </p>
           )}
+        </div>
+
+        <div className="nb-field">
+          <label className="nb-label" htmlFor={`${idFieldId}-display`}>
+            展示名 <span className="nb-label-opt">（可选）</span>
+          </label>
+          <input
+            id={`${idFieldId}-display`}
+            className="nb-input nb-input-title"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            placeholder="如：鹈鹕骑车动画；留空则列表里显示项目名"
+            maxLength={80}
+            autoComplete="off"
+          />
+          <p className="nb-hint">显示在左侧项目列表和预览头部，不影响目录名。</p>
         </div>
 
         {serverError && (

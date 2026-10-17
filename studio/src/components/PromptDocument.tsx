@@ -8,6 +8,8 @@ type Props = {
   repoRoot: string;
   selection: Selection;
   sharedPrompt: string;
+  /** 当前 benchmark 的展示名（meta.json title） */
+  benchmarkTitle: string;
   projectIndex: number;
   projectTotal: number;
   doneCount: number;
@@ -23,6 +25,7 @@ export function PromptDocument({
   repoRoot,
   selection,
   sharedPrompt,
+  benchmarkTitle,
   projectIndex,
   projectTotal,
   doneCount,
@@ -48,7 +51,10 @@ export function PromptDocument({
             项目 {pad2(projectIndex + 1)}
             <span className="eyebrow-of">/ {pad2(projectTotal)}</span>
           </p>
-          <h1 className="hero-title">{breakable(selection.benchmarkId)}</h1>
+          <h1 className="hero-title">{breakable(benchmarkTitle)}</h1>
+          {benchmarkTitle !== selection.benchmarkId && (
+            <p className="hero-slug">{breakable(selection.benchmarkId)}</p>
+          )}
           <div className="hero-combo">
             <span className="chip">{family.id}</span>
             <span className="chip-sep">/</span>
