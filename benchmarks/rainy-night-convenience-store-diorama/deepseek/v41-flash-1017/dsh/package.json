@@ -1,0 +1,17 @@
+{
+  "name": "rainy-night-diorama",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "A procedural, no-UI rain-soaked Japanese convenience-store diorama built with Three.js.",
+  "scripts": {
+    "build": "node tools/build.mjs",
+    "serve": "python3 -m http.server 8000"
+  },
+  "dependencies": {
+    "three": "0.170.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.24.2"
+  }
+}

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#060b13" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230c2b31'/%3E%3Cpath d='M32 11l5.4 15.6L53 32l-15.6 5.4L32 53l-5.4-15.6L11 32l15.6-5.4z' fill='%23f29a63'/%3E%3C/svg%3E" />
+  <title>星見町、雨の交差点</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --night-0: #03060b;
+      --night-1: #08111d;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background:
+        radial-gradient(ellipse 64% 54% at 58% 34%, rgba(64, 128, 148, 0.38), rgba(18, 36, 56, 0.12) 48%, transparent 74%),
+        radial-gradient(ellipse 54% 55% at 28% 55%, rgba(126, 73, 92, 0.24), transparent 65%),
+        radial-gradient(ellipse 130% 95% at 50% 42%, #1d3352 0%, #0b1728 46%, #04070d 100%);
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 3;
+      background:
+        radial-gradient(ellipse 72% 70% at 50% 47%, transparent 55%, rgba(1, 4, 9, 0.3) 88%, rgba(0, 2, 6, 0.72) 128%);
+      mix-blend-mode: multiply;
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 4;
+      opacity: 0.055;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 220 220' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.92' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.72'/%3E%3C/svg%3E");
+      mix-blend-mode: soft-light;
+    }
+    #stage {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+    }
+    #stage canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+      outline: none;
+      filter: saturate(1.13) contrast(1.025) brightness(1.025);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #stage canvas { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <main id="stage" aria-label="雨の夜のコンビニ街角ジオラマ"></main>
+  <script src="./bundle.js"></script>
+</body>
+</html>
