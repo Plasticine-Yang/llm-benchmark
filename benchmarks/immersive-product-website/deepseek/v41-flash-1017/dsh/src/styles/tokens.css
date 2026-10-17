@@ -1,0 +1,117 @@
+:root {
+  /* Graphite atmosphere */
+  --ink-1000: #060707;
+  --ink-950: #090a0a;
+  --ink-900: #0b0d0d;
+  --ink-850: #0e1010;
+  --ink-800: #121414;
+  --ink-750: #161919;
+  --ink-700: #1b1e1e;
+  --ink-650: #222525;
+  --ink-600: #2b2f2e;
+
+  /* Ice silver typography */
+  --silver-050: #f7f8f5;
+  --silver-100: #eceeea;
+  --silver-150: #e0e3de;
+  --silver-200: #ced2cd;
+  --silver-300: #b2b8b2;
+  --silver-400: #8f9691;
+  --silver-500: #6d7470;
+  --silver-600: #505653;
+  --silver-700: #393e3b;
+
+  /* The single warm accent */
+  --amber-200: #e7c39a;
+  --amber-300: #d9ae7c;
+  --amber-400: #c79763;
+  --amber-500: #ae7f50;
+  --amber-600: #89623f;
+  --rust-400: #c77f69;
+
+  --line-faint: rgba(232, 238, 233, 0.08);
+  --line-soft: rgba(232, 238, 233, 0.14);
+  --line-strong: rgba(232, 238, 233, 0.28);
+
+  --font-sans: "Geist Variable", "PingFang SC", "Hiragino Sans GB", "Noto Sans SC",
+    "Source Han Sans SC", "Microsoft YaHei", sans-serif;
+  --font-mono: "Geist Mono Variable", "SFMono-Regular", "Cascadia Mono", "Roboto Mono", monospace;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-mechanical: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  --gutter: clamp(20px, 4vw, 68px);
+  --section-y: clamp(100px, 13vh, 156px);
+  --nav-h: 64px;
+  --radius-lg: 24px;
+  --radius-md: 14px;
+  --radius-sm: 8px;
+
+  color-scheme: dark;
+}
+
+/* Headphone material profiles */
+.tone-obsidian {
+  --hp-shell-a: #33383a;
+  --hp-shell-b: #121516;
+  --hp-shell-c: #24292a;
+  --hp-shell-d: #0b0d0e;
+  --hp-metal-a: #f2f4f0;
+  --hp-metal-b: #a9afae;
+  --hp-metal-c: #4f5757;
+  --hp-metal-d: #252a2b;
+  --hp-accent: #cb9864;
+  --hp-accent-soft: rgba(203, 152, 100, 0.32);
+  --hp-pad-a: #202424;
+  --hp-pad-b: #0a0c0c;
+  --hp-glass-a: rgba(224, 238, 235, 0.26);
+  --hp-glass-b: rgba(119, 144, 140, 0.1);
+  --hp-ambient: #9ba69f;
+  --hp-ambient-warm: rgba(197, 143, 88, 0.32);
+  --ambient-a: rgba(140, 157, 150, 0.19);
+  --ambient-b: rgba(181, 130, 78, 0.12);
+}
+
+.tone-mist {
+  --hp-shell-a: #c1c7c5;
+  --hp-shell-b: #858d8b;
+  --hp-shell-c: #e2e5e1;
+  --hp-shell-d: #5f6765;
+  --hp-metal-a: #ffffff;
+  --hp-metal-b: #c4cdca;
+  --hp-metal-c: #717977;
+  --hp-metal-d: #353b3a;
+  --hp-accent: #bc8e60;
+  --hp-accent-soft: rgba(188, 142, 96, 0.3);
+  --hp-pad-a: #272b2a;
+  --hp-pad-b: #0e1111;
+  --hp-glass-a: rgba(236, 249, 246, 0.4);
+  --hp-glass-b: rgba(160, 183, 180, 0.15);
+  --hp-ambient: #cdd8d4;
+  --hp-ambient-warm: rgba(206, 160, 108, 0.25);
+  --ambient-a: rgba(196, 214, 209, 0.28);
+  --ambient-b: rgba(173, 141, 104, 0.12);
+}
+
+.tone-amber {
+  --hp-shell-a: #a26b46;
+  --hp-shell-b: #5b3824;
+  --hp-shell-c: #bd8356;
+  --hp-shell-d: #2a1810;
+  --hp-metal-a: #fff4e4;
+  --hp-metal-b: #c7b5a0;
+  --hp-metal-c: #766555;
+  --hp-metal-d: #362c22;
+  --hp-accent: #edb376;
+  --hp-accent-soft: rgba(237, 179, 118, 0.34);
+  --hp-pad-a: #251a14;
+  --hp-pad-b: #0d0907;
+  --hp-glass-a: rgba(255, 237, 214, 0.32);
+  --hp-glass-b: rgba(177, 127, 87, 0.12);
+  --hp-ambient: #d9a26f;
+  --hp-ambient-warm: rgba(237, 179, 118, 0.36);
+  --ambient-a: rgba(205, 153, 101, 0.21);
+  --ambient-b: rgba(237, 179, 118, 0.15);
+}

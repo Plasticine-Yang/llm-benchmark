@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#090a0a" />
+    <meta property="og:title" content="NOCTURNE ONE — 听见空间，而不只是声音。" />
+    <meta property="og:description" content="透明双腔体、个性化 HRTF 与 42 小时续航。NOCTURNE ONE 空间音频耳机。" />
+    <meta property="og:type" content="website" />
+    <meta
+      name="description"
+      content="NOCTURNE ONE 空间音频耳机。透明双腔体、个性化 HRTF 与 42 小时续航，重新定义私人声场。"
+    />
+    <link rel="icon" type="image/svg+xml" href="./mark.svg" />
+    <title>NOCTURNE ONE — 听见空间，而不只是声音。</title>
+    <script>
+      (() => {
+        try {
+          const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          const seen = sessionStorage.getItem('nocturne-intro') === '1';
+          if (!reduce && !seen) {
+            document.documentElement.classList.add('intro');
+            sessionStorage.setItem('nocturne-intro', '1');
+          }
+        } catch (_) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

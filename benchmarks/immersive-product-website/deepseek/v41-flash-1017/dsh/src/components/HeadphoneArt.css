@@ -1,0 +1,251 @@
+.headphone-art {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  pointer-events: none;
+}
+
+.headphone-art svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.hp-world {
+  transform-origin: 50% 53%;
+}
+
+.hp-stop-band-a,
+.hp-stop-shell-a,
+.hp-stop-face-a,
+.hp-stop-metal-light,
+.hp-stop-pad-a,
+.hp-stop-glass-a,
+.hp-stop-accent-a,
+.hp-stop-driver-a {
+  transition: stop-color 900ms var(--ease-out-expo);
+}
+
+/* Band */
+.hp-stop-band-a {
+  stop-color: var(--hp-shell-c);
+}
+.hp-stop-band-b {
+  stop-color: var(--hp-shell-a);
+  transition: stop-color 900ms var(--ease-out-expo);
+}
+.hp-stop-band-c {
+  stop-color: var(--hp-shell-b);
+  transition: stop-color 900ms var(--ease-out-expo);
+}
+.hp-stop-band-d {
+  stop-color: var(--hp-shell-d);
+  transition: stop-color 900ms var(--ease-out-expo);
+}
+
+.hp-band-body {
+  filter: drop-shadow(0 18px 22px rgba(0, 0, 0, 0.34));
+}
+
+.hp-cushion {
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.5));
+}
+
+.hp-wordmark {
+  font-family: var(--font-sans);
+  font-size: 8.4px;
+  font-weight: 530;
+  letter-spacing: 4.7px;
+}
+
+/* Shells and gaskets */
+.hp-stop-shell-a {
+  stop-color: var(--hp-shell-c);
+}
+.hp-stop-shell-b {
+  stop-color: var(--hp-shell-a);
+  transition: stop-color 900ms var(--ease-out-expo);
+}
+.hp-stop-shell-c {
+  stop-color: var(--hp-shell-b);
+  transition: stop-color 900ms var(--ease-out-expo);
+}
+.hp-stop-shell-d {
+  stop-color: var(--hp-shell-d);
+  transition: stop-color 900ms var(--ease-out-expo);
+}
+
+.hp-stop-face-a {
+  stop-color: var(--hp-shell-c);
+  stop-opacity: 0.88;
+}
+.hp-stop-face-b {
+  stop-color: var(--hp-shell-b);
+  stop-opacity: 0.96;
+  transition:
+    stop-color 900ms var(--ease-out-expo),
+    stop-opacity 900ms var(--ease-out-expo);
+}
+.hp-stop-face-c {
+  stop-color: var(--hp-shell-d);
+  stop-opacity: 1;
+  transition: stop-color 900ms var(--ease-out-expo);
+}
+
+.hp-stop-metal-light {
+  stop-color: var(--hp-metal-a);
+  transition: stop-color 900ms var(--ease-out-expo);
+}
+.hp-stop-metal-mid {
+  stop-color: var(--hp-metal-b);
+  transition: stop-color 900ms var(--ease-out-expo);
+}
+.hp-stop-metal-dark {
+  stop-color: var(--hp-metal-c);
+  transition: stop-color 900ms var(--ease-out-expo);
+}
+.hp-stop-metal-d {
+  stop-color: var(--hp-metal-d);
+}
+
+.hp-shell {
+  filter: drop-shadow(0 15px 24px rgba(0, 0, 0, 0.35));
+}
+
+.hp-stop-pad-a {
+  stop-color: var(--hp-pad-a);
+}
+.hp-stop-pad-b {
+  stop-color: var(--hp-pad-b);
+  transition: stop-color 900ms var(--ease-out-expo);
+}
+.hp-stop-pad-c {
+  stop-color: #050606;
+}
+
+.hp-stop-glass-a {
+  stop-color: var(--hp-glass-a);
+  stop-opacity: 0.72;
+}
+.hp-stop-glass-b {
+  stop-color: var(--hp-glass-b);
+  stop-opacity: 0.36;
+  transition: stop-color 900ms var(--ease-out-expo);
+}
+.hp-stop-glass-c {
+  stop-color: rgba(4, 5, 5, 0.85);
+  stop-opacity: 0.78;
+}
+
+.hp-stop-accent-a {
+  stop-color: var(--hp-accent);
+  stop-opacity: 0.55;
+}
+.hp-stop-accent-b {
+  stop-color: var(--hp-accent);
+  stop-opacity: 0.95;
+  transition: stop-color 900ms var(--ease-out-expo);
+}
+.hp-stop-accent-c {
+  stop-color: var(--hp-accent);
+  stop-opacity: 0.36;
+}
+
+.hp-stop-driver-a {
+  stop-color: #1c2020;
+}
+.hp-stop-driver-b {
+  stop-color: #0a0c0c;
+}
+.hp-stop-driver-c {
+  stop-color: #020303;
+}
+
+.hp-chamber-label {
+  font-family: var(--font-mono);
+  font-size: 6.8px;
+  letter-spacing: 0.18em;
+}
+
+.hp-serial {
+  font-family: var(--font-mono);
+  font-size: 7.2px;
+  letter-spacing: 0.27em;
+}
+
+.hp-ambient-shadow {
+  transform-origin: 50% 50%;
+  animation: shadow-breathe 9s ease-in-out infinite;
+}
+
+.hp-cup--left,
+.hp-cup--right {
+  transition: transform 980ms var(--ease-mechanical);
+}
+
+.hp-part.hp-chamber {
+  transition: transform 980ms var(--ease-mechanical);
+}
+
+.hp-band {
+  transition: transform 980ms var(--ease-mechanical);
+}
+
+.hp-sweep {
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+.hp-sweep-motion {
+  animation: product-sweep 10.5s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+}
+
+.hp-pivots {
+  pointer-events: none;
+  transition:
+    transform 980ms var(--ease-mechanical),
+    opacity 500ms ease;
+}
+
+@keyframes product-sweep {
+  0%,
+  52% {
+    transform: translateX(-60px);
+    opacity: 0;
+  }
+  58% {
+    opacity: 1;
+  }
+  79% {
+    transform: translateX(1120px);
+    opacity: 0.7;
+  }
+  80%,
+  100% {
+    transform: translateX(1120px);
+    opacity: 0;
+  }
+}
+
+@keyframes shadow-breathe {
+  0%,
+  100% {
+    transform: scaleX(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scaleX(0.88);
+    opacity: 0.36;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hp-sweep-motion,
+  .hp-ambient-shadow {
+    animation: none;
+  }
+
+  .hp-sweep {
+    display: none;
+  }
+}
