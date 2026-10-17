@@ -74,7 +74,7 @@ export function TopBar({ manifest, loading, theme, onToggleTheme, onRescan }: Pr
       <div className="brand">
         <BrandMark />
         <span className="wordmark">
-          Prompt <em>Studio</em>
+          Benchmark <em>Studio</em>
         </span>
         {manifest && repoName && (
           <>

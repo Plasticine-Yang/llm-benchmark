@@ -5,23 +5,45 @@ import type { FilterMode } from './components/ComboList';
 import { CopyButton } from './components/CopyButton';
 import { Icon } from './components/Icon';
 import { ProjectList } from './components/ProjectList';
+import { PreviewPane } from './components/PreviewPane';
 import { PromptDocument } from './components/PromptDocument';
 import { Toast, useToast } from './components/Toast';
 import { TopBar } from './components/TopBar';
 import { writeClipboard } from './lib/clipboard';
 import { catalogKeys, groupCombos } from './lib/combos';
 import type { ComboRow } from './lib/combos';
-import { MOD_KEY } from './lib/text';
+import { startRun, stopRun, useRuns } from './lib/runs';
+import { cx, MOD_KEY } from './lib/text';
 import { useTheme } from './lib/theme';
 import { composeForSelection, resolveChoice, selectCombo, TARGET_PLACEHOLDER } from './shared/compose';
 import type { Choice } from './shared/compose';
+import type { RunState } from './shared/launch';
 import type { Manifest } from './types';
 
-const STORAGE_KEY = 'prompt-studio/selection';
+const STORAGE_KEY = 'bench-studio/selection';
+const VIEW_KEY = 'bench-studio/view';
+
+export type View = 'prompt' | 'preview';
+
+/** 视图跟着 hash 的 ?view= 走，没写时用上次的选择。 */
+function parseView(): View | null {
+  const query = window.location.hash.split('?')[1] ?? '';
+  const value = new URLSearchParams(query).get('view');
+  return value === 'prompt' || value === 'preview' ? value : null;
+}
+
+function readStoredView(): View {
+  try {
+    const value = window.localStorage.getItem(VIEW_KEY);
+    return value === 'preview' ? 'preview' : 'prompt';
+  } catch {
+    return 'prompt';
+  }
+}
 
 /** 从 URL hash 读取组合，例如 #/pelican/gpt/astra/codex（方便收藏和分享）。 */
 function parseHash(): Partial<Choice> | null {
-  const raw = window.location.hash.replace(/^#\/?/, '').trim();
+  const raw = (window.location.hash.split('?')[0] ?? '').replace(/^#\/?/, '').trim();
   if (!raw) return null;
   const parts = raw.split('/').filter(Boolean).map((part) => decodeURIComponent(part));
   const project = parts[0];
@@ -64,6 +86,7 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [reloadToken, setReloadToken] = useState(0);
+  const [view, setView] = useState<View>(() => parseView() ?? readStoredView());
   const [theme, toggleTheme] = useTheme();
 
   useEffect(() => {
@@ -91,19 +114,23 @@ export function App() {
   // 选中的组合同步到 URL hash 与 localStorage，刷新后保持。
   useEffect(() => {
     if (!choice) return;
-    const hash = `#/${choice.project}/${choice.family}/${choice.model}/${choice.harness}`;
+    const base = `#/${choice.project}/${choice.family}/${choice.model}/${choice.harness}`;
+    const hash = view === 'preview' ? `${base}?view=preview` : base;
     if (window.location.hash !== hash) window.history.replaceState(null, '', hash);
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(choice));
+      window.localStorage.setItem(VIEW_KEY, view);
     } catch {
       /* 隐私模式下写不进去，忽略 */
     }
-  }, [choice]);
+  }, [choice, view]);
 
   // 支持手工改 hash / 浏览器前进后退。
   useEffect(() => {
     if (!manifest) return;
     const onHashChange = () => {
+      const nextView = parseView();
+      if (nextView) setView(nextView);
       const wanted = parseHash();
       if (!wanted) return;
       setChoice((prev) => resolveChoice(manifest, wanted) ?? prev);
@@ -133,13 +160,64 @@ export function App() {
         </State>
       )}
       {!error && !manifest && <State tone="loading" title="正在扫描 benchmarks/ …" />}
-      {manifest && choice && <Studio manifest={manifest} choice={choice} onChoice={setChoice} />}
+      {manifest && choice && (
+        <Studio
+          manifest={manifest}
+          choice={choice}
+          onChoice={setChoice}
+          view={view}
+          onView={setView}
+        />
+      )}
       {manifest && !choice && (
         <State
           tone="error"
           title="没有可用的组合"
           detail="benchmarks/catalog.txt 里没有可用的组合，或 benchmarks/ 下没有带 prompt.md 的项目。"
         />
+      )}
+    </div>
+  );
+}
+
+/** 页签右侧：当前所有运行中的产出，点一下跳过去，也能直接停掉。 */
+function RunTray({
+  runs,
+  current,
+  onJump,
+  onStop,
+}: {
+  runs: RunState[];
+  current: string;
+  onJump: (id: string) => void;
+  onStop: (id: string) => void;
+}) {
+  return (
+    <div className="run-tray">
+      {runs.length > 0 && (
+        <details className="tray">
+          <summary className="tray-pill">
+            <i aria-hidden="true" />
+            {runs.length} 个运行中
+          </summary>
+          <div className="tray-panel">
+            {runs.map((item) => {
+              const port = Object.values(item.ports)[0];
+              return (
+                <div key={item.id} className={cx('tray-row', item.id === current && 'is-current')}>
+                  <button type="button" className="tray-jump" onClick={() => onJump(item.id)} title="跳到这个产出的预览">
+                    <span className={cx('tray-dot', item.phase !== 'running' && 'is-busy')} aria-hidden="true" />
+                    <code>{item.id}</code>
+                    {port !== undefined && <span className="tray-port">:{port}</span>}
+                  </button>
+                  <button type="button" className="icon-btn tray-stop" onClick={() => onStop(item.id)} title="停止" aria-label={`停止 ${item.id}`}>
+                    <Icon name="stop" size={12} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </details>
       )}
     </div>
   );
@@ -172,10 +250,14 @@ function Studio({
   manifest,
   choice,
   onChoice,
+  view,
+  onView,
 }: {
   manifest: Manifest;
   choice: Choice;
   onChoice: (next: Choice) => void;
+  view: View;
+  onView: (view: View) => void;
 }) {
   const { toast, visible, notify } = useToast();
   const [query, setQuery] = useState('');
@@ -187,6 +269,12 @@ function Studio({
   useEffect(() => () => window.clearTimeout(copiedTimer.current), []);
 
   const selection = useMemo(() => selectCombo(manifest, choice), [manifest, choice]);
+  const { byId: runs, active: activeRuns, refresh: refreshRuns } = useRuns();
+  const [busy, setBusy] = useState(false);
+  const comboId = selection ? `${selection.benchmarkId}/${selection.key}` : '';
+  const benchmark = manifest.benchmarks.find((item) => item.id === choice.project);
+  const launch = selection ? benchmark?.launch[selection.key] : undefined;
+  const run = comboId ? runs.get(comboId) : undefined;
   const prompt = useMemo(
     () => (selection ? composeForSelection(manifest, selection) : ''),
     [manifest, selection],
@@ -250,6 +338,49 @@ function Studio({
     copy('full', prompt, `已复制完整 prompt · ${prompt.length.toLocaleString('en-US')} 字符`);
   }, [copy, prompt]);
 
+  const runAction = useCallback(
+    (action: 'start' | 'stop' | 'restart') => {
+      if (!comboId || busy) return;
+      setBusy(true);
+      void (async () => {
+        try {
+          if (action !== 'start') await stopRun(comboId);
+          if (action !== 'stop') {
+            const result = await startRun(comboId);
+            if (result.evicted) notify(`同时运行数已满，已停止 ${result.evicted}`);
+          }
+        } catch (error) {
+          notify(error instanceof Error ? error.message : String(error), 'error');
+        } finally {
+          setBusy(false);
+          refreshRuns();
+        }
+      })();
+    },
+    [comboId, busy, notify, refreshRuns],
+  );
+
+  const stopById = useCallback(
+    (id: string) => {
+      void stopRun(id)
+        .catch((error: unknown) => notify(error instanceof Error ? error.message : String(error), 'error'))
+        .finally(refreshRuns);
+    },
+    [notify, refreshRuns],
+  );
+
+  /** 从顶栏的运行列表跳到某个产出。 */
+  const jumpTo = useCallback(
+    (id: string) => {
+      const [project, family, model, harness] = id.split('/');
+      if (!project || !family || !model || !harness) return;
+      const next = resolveChoice(manifest, { project, family, model, harness });
+      if (next) onChoice(next);
+      onView('preview');
+    },
+    [manifest, onChoice, onView],
+  );
+
   const activeKey = selection?.key ?? '';
   const projectIndex = manifest.benchmarks.findIndex((item) => item.id === choice.project);
 
@@ -285,6 +416,26 @@ function Studio({
 
       if (typing) return;
 
+      if (event.key === 'p' || event.key === 'v') {
+        event.preventDefault();
+        onView(event.key === 'p' ? 'prompt' : 'preview');
+        return;
+      }
+
+      if (view === 'preview' && launch?.spec === 'process') {
+        const running = run && (run.phase === 'running' || run.phase === 'starting' || run.phase === 'setup');
+        if (event.key === 'r' && !running) {
+          event.preventDefault();
+          runAction('start');
+          return;
+        }
+        if (event.key === 's' && running) {
+          event.preventDefault();
+          runAction('stop');
+          return;
+        }
+      }
+
       if (event.key === '/') {
         event.preventDefault();
         searchRef.current?.focus();
@@ -303,7 +454,7 @@ function Studio({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [copyFull, visibleRows, activeKey, pickRow, pick, manifest, projectIndex]);
+  }, [copyFull, visibleRows, activeKey, pickRow, pick, manifest, projectIndex, onView, view, launch, run, runAction]);
 
   const reveal = useCallback(() => {
     if (!selection) return;
@@ -340,10 +491,52 @@ function Studio({
         onMode={setMode}
         searchRef={searchRef}
         onPick={pickRow}
+        launch={benchmark?.launch ?? {}}
+        runs={runs}
+        project={choice.project}
       />
 
-      <section className="column column-doc" aria-label="Prompt">
-        {selection ? (
+      <section className="column column-doc" aria-label={view === 'prompt' ? 'Prompt' : '预览'}>
+        <nav className="doc-tabs" role="tablist" aria-label="视图">
+          {(
+            [
+              ['prompt', 'Prompt', 'P'],
+              ['preview', '预览', 'V'],
+            ] as const
+          ).map(([id, label, key]) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={view === id}
+              className={cx('doc-tab', view === id && 'is-active')}
+              onClick={() => onView(id)}
+            >
+              {label}
+              {id === 'preview' && run && (run.phase === 'running' || run.phase === 'starting' || run.phase === 'setup') && (
+                <i className={cx('tab-live', run.phase !== 'running' && 'is-busy')} aria-label="运行中" />
+              )}
+              <kbd className="kbd">{key}</kbd>
+            </button>
+          ))}
+          <RunTray runs={activeRuns} current={comboId} onJump={jumpTo} onStop={stopById} />
+        </nav>
+
+        {selection && view === 'preview' ? (
+          <PreviewPane
+            key={comboId}
+            selection={selection}
+            comboId={comboId}
+            launch={launch}
+            run={run}
+            busy={busy}
+            onStart={() => runAction('start')}
+            onStop={() => runAction('stop')}
+            onRestart={() => runAction('restart')}
+            onReveal={reveal}
+            onShowPrompt={() => onView('prompt')}
+          />
+        ) : selection ? (
           <>
             <div className="doc-scroll">
               <div className="doc-anim" key={`${selection.benchmarkId}:${selection.key}`}>

@@ -1,0 +1,13 @@
+{
+  "name": "llm-benchmark",
+  "private": true,
+  "description": "在仓库根目录直接用：pnpm dev 启动 Benchmark Studio，pnpm bench / pnpm prompt 走命令行",
+  "scripts": {
+    "dev": "pnpm --filter bench-studio dev",
+    "build": "pnpm --filter bench-studio build",
+    "preview": "pnpm --filter bench-studio preview",
+    "typecheck": "pnpm --filter bench-studio typecheck",
+    "prompt": "pnpm --filter bench-studio --silent prompt",
+    "bench": "pnpm --filter bench-studio --silent bench"
+  }
+}

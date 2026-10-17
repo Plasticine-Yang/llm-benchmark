@@ -3,7 +3,7 @@ import { dirname, resolve } from 'node:path';
 
 /**
  * 从任意起点向上找到仓库根：同时含有 benchmarks/ 与 shared-prompt.md 的目录。
- * 这样 prompt-studio 从哪个 cwd 启动都能定位到数据。
+ * 这样 studio 从哪个 cwd 启动都能定位到数据。
  */
 export function findRepoRoot(start: string): string {
   let dir = resolve(start);

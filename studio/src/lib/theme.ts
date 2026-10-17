@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 export type Theme = 'light' | 'dark';
 
-const THEME_KEY = 'prompt-studio/theme';
+const THEME_KEY = 'bench-studio/theme';
 
 /** index.html 里的内联脚本已经在首帧前写好 data-theme，这里直接沿用，避免闪烁。 */
 function initialTheme(): Theme {

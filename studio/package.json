@@ -1,15 +1,16 @@
 {
-  "name": "prompt-studio",
+  "name": "bench-studio",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "组合 benchmarks/ 下的 prompt.md 与仓库根的 shared-prompt.md，生成可直接粘贴到 harness 的 prompt",
+  "description": "Benchmark Studio：拼装 benchmark prompt，并按 bench.json 启动 / 预览 / 停止各模型产出",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "prompt": "tsx scripts/prompt.ts"
+    "prompt": "tsx scripts/prompt.ts",
+    "bench": "tsx scripts/bench.ts"
   },
   "dependencies": {
     "react": "^19.3.0",

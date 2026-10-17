@@ -1,3 +1,5 @@
+import type { LaunchInfo } from './shared/launch.ts';
+
 /** 全集里的一个模型：<family>/<model>，带它可用的 harness 列表。 */
 export type CatalogModel = {
   /** 具体模型名，例如 astra、5-6-sol、v41-flash */
@@ -27,6 +29,8 @@ export type Benchmark = {
   prompt: string;
   /** 该项目已有的产出，元素形如 "gpt/astra/codex" */
   produced: string[];
+  /** 各已有产出的启动规范（bench.json）状态，键同 produced */
+  launch: Record<string, LaunchInfo>;
 };
 
 export type Manifest = {

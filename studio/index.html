@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Prompt Studio · llm-benchmark</title>
+    <title>Benchmark Studio · llm-benchmark</title>
     <link
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 26'%3E%3Crect width='26' height='26' rx='7.5' fill='%231b1a17'/%3E%3Crect x='6.5' y='8' width='13' height='3' rx='1.5' fill='%23f4f2ec'/%3E%3Crect x='6.5' y='15' width='7.5' height='3' rx='1.5' fill='%23e2582a'/%3E%3Ccircle cx='18' cy='16.5' r='1.6' fill='%23e2582a'/%3E%3C/svg%3E"
@@ -13,7 +13,7 @@
       (function () {
         var theme;
         try {
-          theme = localStorage.getItem('prompt-studio/theme');
+          theme = localStorage.getItem('bench-studio/theme');
         } catch (e) {}
         if (theme !== 'light' && theme !== 'dark') {
           theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';

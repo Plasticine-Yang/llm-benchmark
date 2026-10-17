@@ -1,6 +1,6 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
-import { promptStudioPlugin } from './server/plugin.ts';
+import { benchStudioPlugin } from './server/plugin.ts';
 
 export default defineConfig({
   server: { host: '127.0.0.1', port: 5274, strictPort: true },
@@ -12,5 +12,5 @@ export default defineConfig({
     // .node 文件。esbuild 是子进程调用，不受这条限制，所以走 esbuild。
     cssMinify: 'esbuild',
   },
-  plugins: [react(), promptStudioPlugin()],
+  plugins: [react(), benchStudioPlugin()],
 });

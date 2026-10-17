@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import type { Benchmark, CatalogFamily, Manifest } from '../src/types.ts';
+import { readLaunchInfo } from './spec.ts';
 import { parseCatalog } from './catalog.ts';
 import { findRepoRoot } from './paths.ts';
 
@@ -82,6 +83,7 @@ export function scanManifest(startDir: string = process.cwd()): Manifest {
     }
 
     const produced: string[] = [];
+    const launch: Benchmark['launch'] = {};
 
     for (const family of listDirs(projectDir)) {
       const familyDir = join(projectDir, family);
@@ -106,6 +108,7 @@ export function scanManifest(startDir: string = process.cwd()): Manifest {
         for (const harness of listDirs(modelDir)) {
           const triple = `${family}/${model}/${harness}`;
           produced.push(triple);
+          launch[triple] = readLaunchInfo(join(modelDir, harness));
           if (!known.has(triple)) {
             warnings.push(`benchmarks/${projectId}/${triple}/ 不在 catalog.txt 的全集里`);
           }
@@ -118,6 +121,7 @@ export function scanManifest(startDir: string = process.cwd()): Manifest {
       promptPath,
       prompt: readFileSync(promptPath, 'utf8'),
       produced,
+      launch,
     });
   }
 

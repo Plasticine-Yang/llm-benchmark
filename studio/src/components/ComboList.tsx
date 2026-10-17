@@ -1,6 +1,8 @@
 import type { RefObject } from 'react';
 import { useEffect, useRef } from 'react';
 import type { ComboGroup, ComboRow } from '../lib/combos';
+import { ACTIVE_PHASES } from '../shared/launch';
+import type { LaunchInfo, RunState } from '../shared/launch';
 import { cx, MOD_KEY } from '../lib/text';
 import { Icon } from './Icon';
 
@@ -19,7 +21,29 @@ type Props = {
   onMode: (mode: FilterMode) => void;
   searchRef: RefObject<HTMLInputElement | null>;
   onPick: (row: ComboRow) => void;
+  /** 当前项目各产出的启动规范 */
+  launch: Record<string, LaunchInfo>;
+  /** 全部运行状态，键是 <project>/<family>/<model>/<harness> */
+  runs: Map<string, RunState>;
+  project: string;
 };
+
+type Mark = { cls: string; label: string };
+
+/** 行尾的小标：没产出 / 待规范 / 可看（静态、可启动）/ 运行中 / 失败 */
+function markFor(produced: boolean, info: LaunchInfo | undefined, run: RunState | undefined): Mark {
+  if (!produced) return { cls: 'is-todo', label: '未跑' };
+  if (run && ACTIVE_PHASES.has(run.phase)) {
+    return run.phase === 'running'
+      ? { cls: 'is-live', label: '运行中' }
+      : { cls: 'is-live is-busy', label: '启动中' };
+  }
+  if (run?.phase === 'failed') return { cls: 'is-failed', label: '上次启动失败' };
+  if (!info || info.spec === 'missing') return { cls: 'is-raw', label: info?.empty ? '已产出 · 空目录' : '已产出 · 待规范启动方式' };
+  if (info.spec === 'invalid') return { cls: 'is-failed', label: 'bench.json 有误' };
+  if (info.spec === 'unavailable') return { cls: 'is-raw', label: '已规范 · 无法预览' };
+  return { cls: 'is-ready', label: info.spec === 'static' ? '可预览 · 静态页面' : '可预览 · 需启动服务' };
+}
 
 const MODES: Array<{ id: FilterMode; label: string }> = [
   { id: 'all', label: '全部' },
@@ -39,6 +63,9 @@ export function ComboList({
   onMode,
   searchRef,
   onPick,
+  launch,
+  runs,
+  project,
 }: Props) {
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -147,6 +174,7 @@ export function ComboList({
             {group.rows.map((row) => {
               const active = row.key === activeKey;
               const produced = done.has(row.key);
+              const mark = markFor(produced, launch[row.key], runs.get(`${project}/${row.key}`));
               return (
                 <button
                   key={row.key}
@@ -160,7 +188,7 @@ export function ComboList({
                     row.nth === 0 && 'is-model-start',
                   )}
                   onClick={() => onPick(row)}
-                  title={`${row.key}\n${produced ? '本项目已有产出' : '本项目还没跑过'}`}
+                  title={`${row.key}\n${mark.label}`}
                 >
                   <span
                     className={cx(
@@ -172,7 +200,7 @@ export function ComboList({
                     {row.nth === 0 ? row.model : null}
                   </span>
                   <span className="combo-harness">{row.harness}</span>
-                  <span className="combo-dot" aria-label={produced ? '已有产出' : '未跑'} />
+                  <span className={cx('combo-dot', mark.cls)} aria-label={mark.label} />
                 </button>
               );
             })}
@@ -196,6 +224,7 @@ export function ComboList({
           <kbd className="kbd">↵</kbd>
           复制
         </span>
+
       </footer>
     </section>
   );

@@ -41,6 +41,29 @@ const PATHS = {
   ),
   close: <path d="m4 4 8 8M12 4l-8 8" />,
   plus: <path d="M8 3.5v9M3.5 8h9" />,
+  play: <path d="M5 3.4v9.2a.6.6 0 0 0 .9.52l7.6-4.6a.6.6 0 0 0 0-1.04L5.9 2.88A.6.6 0 0 0 5 3.4Z" fill="currentColor" stroke="none" />,
+  stop: <rect x="4" y="4" width="8" height="8" rx="1.5" fill="currentColor" stroke="none" />,
+  reload: (
+    <>
+      <path d="M2.75 8a5.25 5.25 0 0 1 9.1-3.57" />
+      <path d="M13.25 8a5.25 5.25 0 0 1-9.1 3.57" />
+      <path d="M12.25 2.25v2.5h-2.5M3.75 13.75v-2.5h2.5" />
+    </>
+  ),
+  external: (
+    <>
+      <path d="M9.5 2.5h4v4M13.25 2.75 7.5 8.5" />
+      <path d="M12 9.5v2.75A1.25 1.25 0 0 1 10.75 13.5h-7A1.25 1.25 0 0 1 2.5 12.25v-7A1.25 1.25 0 0 1 3.75 4H6.5" />
+    </>
+  ),
+  terminal: (
+    <>
+      <rect x="2" y="3" width="12" height="10" rx="1.75" />
+      <path d="m5 6.5 2 1.5-2 1.5M8.5 10h2.5" />
+    </>
+  ),
+  chevronUp: <path d="m4.5 10 3.5-3.5 3.5 3.5" />,
+  chevronDown: <path d="m4.5 6 3.5 3.5 3.5-3.5" />,
 } as const;
 
 export type IconName = keyof typeof PATHS;
