@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "kind": "static",
+  "entry": "index.html",
+  "notes": "纯静态：index.html 直接引用已构建的 bundle.js（Three.js 已内联），无需安装依赖或构建。"
+}
