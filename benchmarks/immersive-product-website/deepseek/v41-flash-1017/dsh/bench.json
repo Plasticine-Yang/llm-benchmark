@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "kind": "process",
+  "setup": [
+    { "run": "pnpm install --frozen-lockfile", "unless": "node_modules" },
+    { "run": "pnpm build", "unless": "dist/index.html" }
+  ],
+  "start": "node serve.mjs",
+  "notes": "产出自带 serve.mjs 托管 dist，读 PORT"
+}

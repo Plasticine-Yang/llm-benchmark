@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "kind": "process",
+  "setup": [{ "run": "node scripts/build.mjs", "unless": "dist/index.html" }],
+  "start": "node server/index.mjs --production",
+  "notes": "零依赖；--production 时托管 dist，读 PORT"
+}

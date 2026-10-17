@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "kind": "process",
+  "start": "node server/index.js",
+  "notes": "零依赖 node 服务，读 PORT，自带 dist/ 静态页面"
+}

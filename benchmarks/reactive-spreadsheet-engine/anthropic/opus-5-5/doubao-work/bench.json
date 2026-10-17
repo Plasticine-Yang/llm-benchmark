@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "kind": "process",
+  "setup": [
+    { "run": "npm ci", "unless": "node_modules" },
+    { "run": "npm run build", "unless": "dist-server/index.js" }
+  ],
+  "start": "node dist-server/index.js",
+  "notes": "生产模式：打包好的后端读 PORT 并托管 dist；npm run dev 需要 5173+3001 两个写死端口，不用"
+}

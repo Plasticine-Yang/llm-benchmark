@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "kind": "process",
+  "setup": [
+    { "run": "pnpm install --frozen-lockfile", "unless": "node_modules" },
+    { "run": "pnpm build", "unless": "dist/index.html" }
+  ],
+  "start": "node server/index.js",
+  "env": { "HOST": "127.0.0.1", "NODE_ENV": "production" },
+  "notes": "express 后端读 PORT，dist 存在时同端口托管前端和 /ws；pnpm dev 需要 5173+8787 两个写死端口，不用"
+}

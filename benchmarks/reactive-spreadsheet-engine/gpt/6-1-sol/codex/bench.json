@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "kind": "process",
+  "setup": [
+    { "run": "pnpm install --frozen-lockfile", "unless": "node_modules" },
+    { "run": "pnpm build", "unless": "dist/index.html" }
+  ],
+  "start": "node_modules/.bin/tsx server/index.ts",
+  "notes": "生产模式：express 后端读 PORT 并托管 dist；pnpm dev 需要 5173+3001 两个写死端口，不用"
+}

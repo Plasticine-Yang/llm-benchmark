@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "kind": "process",
+  "setup": [
+    {
+      "run": "npm ci",
+      "unless": "node_modules"
+    },
+    {
+      "run": "npm run build",
+      "unless": "dist/index.html"
+    }
+  ],
+  "start": "node server/index.js",
+  "notes": "后端读 PORT 并托管 dist，单端口即可；npm run dev 需要 5173+8787 两个写死端口，不用"
+}

@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "kind": "process",
+  "setup": [{ "run": "node scripts/build.js", "unless": "dist/index.html" }],
+  "start": "node server/index.js --prod",
+  "env": { "HOST": "127.0.0.1" },
+  "notes": "零依赖；--prod 时托管 dist，读 PORT"
+}
