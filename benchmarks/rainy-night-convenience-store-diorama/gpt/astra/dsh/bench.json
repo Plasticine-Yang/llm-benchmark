@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "kind": "static",
+  "entry": "index.html",
+  "notes": "页面通过 jsDelivr CDN 加载 Three.js 和 OrbitControls，预览时需要联网。"
+}
