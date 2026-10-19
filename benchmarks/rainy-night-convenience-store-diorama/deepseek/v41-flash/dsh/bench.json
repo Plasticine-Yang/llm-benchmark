@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "kind": "static",
+  "entry": "index.html",
+  "notes": "纯静态产出：three.js 已随包放在 vendor/ 下，无需安装依赖、无需构建。index.html 用 importmap + ES module 加载 src/main.js，因此必须通过 HTTP 打开（file:// 会被浏览器的模块 CORS 拦住）。"
+}
