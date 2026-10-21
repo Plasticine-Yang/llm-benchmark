@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "kind": "process",
+  "setup": [
+    { "run": "npm ci", "unless": "node_modules" },
+    { "run": "npm run build", "unless": "dist/index.html" }
+  ],
+  "start": "node_modules/.bin/vite preview --host 127.0.0.1 --port {port} --strictPort",
+  "notes": "纯前端 React + vite；package-lock.json 存在，setup 用 npm ci，构建产物 dist/ 由 vite preview 托管"
+}
