@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f4f5f0">
+  <title>Gridline — Reactive Spreadsheet</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand-block">
+      <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+      <div>
+        <h1>Gridline</h1>
+        <p>Reactive spreadsheet engine</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span id="save-status" class="save-status" role="status"><i></i> Loading workbook…</span>
+      <button id="undo-button" class="icon-button" title="Undo (Ctrl/⌘ Z)" aria-label="Undo" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7 4 12l5 5M5 12h8a6 6 0 0 1 6 6"/></svg>
+      </button>
+      <button id="redo-button" class="icon-button" title="Redo (Ctrl/⌘ Shift Z)" aria-label="Redo" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 7 5 5-5 5m4-5h-8a6 6 0 0 0-6 6"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <section class="sheet-card" aria-label="Spreadsheet">
+      <div class="formula-bar">
+        <div id="name-box" class="name-box" title="Selected cell">A1</div>
+        <span class="fx" aria-hidden="true">ƒx</span>
+        <input id="formula-input" aria-label="Cell formula or value" autocomplete="off" spellcheck="false" placeholder="Enter a value or formula, e.g. =SUM(A1:A5)">
+        <div id="value-chip" class="value-chip"><span>Value</span><strong>—</strong></div>
+      </div>
+      <div id="grid-scroll" class="grid-scroll">
+        <div id="spreadsheet-grid" class="spreadsheet-grid" role="grid" aria-rowcount="20" aria-colcount="10"></div>
+      </div>
+      <footer class="sheet-footer">
+        <div class="sheet-tab"><span class="tab-grid-icon" aria-hidden="true"></span> Sheet 1</div>
+        <div class="engine-pulse"><span></span><strong id="recalc-count">0</strong> cells recalculated</div>
+      </footer>
+    </section>
+
+    <aside class="inspector" aria-label="Cell inspector">
+      <div class="inspector-heading">
+        <div>
+          <span class="eyebrow">CELL INSPECTOR</span>
+          <h2 id="inspector-cell">A1</h2>
+        </div>
+        <span id="cell-type" class="type-badge">EMPTY</span>
+      </div>
+
+      <div class="inspect-section">
+        <label>Raw input</label>
+        <code id="raw-display" class="raw-display muted">Empty cell</code>
+      </div>
+      <div class="inspect-section split-result">
+        <div>
+          <label>Computed value</label>
+          <strong id="computed-display" class="computed-display">—</strong>
+        </div>
+        <div>
+          <label>Status</label>
+          <span id="error-display" class="status-pill ok">Ready</span>
+        </div>
+      </div>
+
+      <div class="graph-section references">
+        <div class="graph-title">
+          <span><i></i> References</span>
+          <small id="reference-count">0</small>
+        </div>
+        <p>Cells this formula reads from</p>
+        <div id="reference-list" class="cell-list empty-list">No references</div>
+      </div>
+
+      <div class="graph-section dependents">
+        <div class="graph-title">
+          <span><i></i> Dependents</span>
+          <small id="dependent-count">0</small>
+        </div>
+        <p>Cells that recalculate from this cell</p>
+        <div id="dependent-list" class="cell-list empty-list">No dependents</div>
+      </div>
+
+      <div class="legend">
+        <span><i class="selected-dot"></i> Selected</span>
+        <span><i class="reference-dot"></i> Reference</span>
+        <span><i class="dependent-dot"></i> Dependent</span>
+      </div>
+
+      <div class="tips">
+        <span>QUICK START</span>
+        <p><kbd>Enter</kbd> edit · <kbd>↑↓←→</kbd> move · <kbd>⌘/Ctrl Z</kbd> undo</p>
+        <p>Paste tabular data directly into the grid.</p>
+      </div>
+    </aside>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

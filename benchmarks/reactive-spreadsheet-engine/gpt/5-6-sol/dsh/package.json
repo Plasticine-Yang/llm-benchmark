@@ -1,0 +1,16 @@
+{
+  "name": "reactive-spreadsheet-engine",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A compact reactive spreadsheet with an incremental dependency graph.",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node dist/server.js",
+    "build": "node scripts/build.mjs",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
