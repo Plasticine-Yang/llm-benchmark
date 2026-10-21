@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "kind": "process",
+  "setup": [
+    { "run": "npm ci", "unless": "node_modules" },
+    { "run": "npm run build", "unless": "dist-server/server/index.js" }
+  ],
+  "start": "node dist-server/server/index.js",
+  "readyUrl": "http://127.0.0.1:{port}/api/health",
+  "env": { "NODE_ENV": "production" },
+  "notes": "生产单进程：express 读 PORT，托管 dist/client 与 /api；绕过 npm start 里的 NODE_ENV=production 前缀直接起 node"
+}
