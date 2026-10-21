@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "kind": "process",
+  "setup": [
+    { "run": "pnpm install --frozen-lockfile", "unless": "node_modules" },
+    { "run": "pnpm build", "unless": "dist/index.html" }
+  ],
+  "start": "node_modules/.bin/vite preview --host 127.0.0.1 --port {port} --strictPort",
+  "notes": "纯前端 three.js + vite；pnpm-lock.yaml 存在，setup 用 pnpm；原 bench.json 的 commands/preview.port 5173 不是规范格式，改为 vite preview 指定端口"
+}

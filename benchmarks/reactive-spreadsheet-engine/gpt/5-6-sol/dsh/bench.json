@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "kind": "process",
+  "setup": [{ "run": "npm run build", "unless": "dist/public/index.html" }],
+  "start": "node dist/server.js",
+  "notes": "零第三方依赖，无 lockfile；构建把 src/ 拷到 dist/，生产服务同时托管 dist/public 和 /api，读 PORT"
+}

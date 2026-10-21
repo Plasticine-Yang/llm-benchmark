@@ -1,0 +1,31 @@
+export const C = {
+  ink: 0x182238,
+  inkSoft: 0x24314c,
+  night: 0x0b1224,
+  base: 0x243247,
+  baseEdge: 0x10192a,
+  asphalt: 0x17263a,
+  asphaltWet: 0x203b52,
+  curb: 0x71808f,
+  sidewalk: 0x657584,
+  wall: 0xdde0d4,
+  wallShade: 0xaab7b1,
+  warm: 0xffd990,
+  warmWhite: 0xfff4cf,
+  teal: 0x31c2b4,
+  tealDark: 0x147f80,
+  coral: 0xff6f6d,
+  red: 0xdf5261,
+  blue: 0x5fb6ff,
+  yellow: 0xffd25c,
+  green: 0x5ed092,
+  purple: 0x9b77e8,
+  glass: 0x9bd5e3,
+  steel: 0x6e8297,
+  white: 0xf5f3e8,
+  black: 0x101827,
+};
+
+export const PRODUCT_COLORS = [
+  0xff6f6d, 0x64c9ba, 0xffcf5c, 0x7aaef4, 0xf29cc2, 0x91d26d, 0xd49ceb,
+];
