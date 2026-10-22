@@ -1,0 +1,1136 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Pelican Pedal — Ride the Coast</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700;800&family=Bangers&family=DM+Sans:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  *{font-family:'Fredoka',sans-serif}
+  .bangers{font-family:'Bangers',cursive; letter-spacing:0.06em}
+  canvas{image-rendering: optimizeSpeed;}
+  .glass{background:rgba(255,255,255,0.85); backdrop-filter:blur(12px)}
+  .coast-shadow{box-shadow:0 12px 40px rgba(0,0,0,0.15), 0 2px 0 rgba(0,0,0,0.05)}
+  .btn-press:active{transform:scale(0.96)}
+  @keyframes pedal{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+  @keyframes float{0%,100%{transform:translateY(0) translateX(0)}50%{transform:translateY(-6px) translateX(2px)}}
+  @keyframes shake {
+    0%{transform:translate(1px,1px)}
+    20%{transform:translate(-2px,0)}
+    40%{transform:translate(2px,1px)}
+    60%{transform:translate(-1px,-1px)}
+    80%{transform:translate(1px,0)}
+    100%{transform:translate(0,0)}
+  }
+  .shake{animation:shake 0.28s ease}
+  /* hide scrollbar */
+  ::-webkit-scrollbar{display:none}
+</style>
+</head>
+<body class="bg-[#FFF6E5] min-h-screen flex flex-col overflow-hidden select-none">
+  <!-- Top Nav -->
+  <nav class="w-full bg-[#0B2E3A] text-white flex items-center justify-between px-3 md:px-6 py-3 md:py-3 shrink-0 relative z-50">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-[#FF6B4A] grid place-items-center text-xl -rotate-3 border-2 border-white/20">🚲</div>
+      <div>
+        <div class="bangers text-[22px] leading-none text-[#FFD93D]">PELICAN PEDAL</div>
+        <div class="text-[10px] tracking-[0.18em] opacity-70 font-bold -mt-1">COASTAL CRUISER • EST. 1987</div>
+      </div>
+      <div class="hidden md:flex ml-6 gap-2 text-[11px] font-bold">
+        <span class="bg-white/15 px-2.5 py-1 rounded-full border border-white/10">🌊 ENDLESS RIDE</span>
+        <span class="bg-white/10 px-2.5 py-1 rounded-full">60 FPS</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 md:gap-3">
+      <div class="hidden sm:flex items-center gap-2 bg-white text-[#0B2E3A] rounded-full px-3 py-1.5 font-extrabold text-sm">
+        <span class="w-2 h-2 bg-[#FF6B4A] rounded-full animate-pulse"></span>BEST: <span id="hudBest">0</span>
+      </div>
+      <button id="btnPause" class="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white/10 border border-white/20 grid place-items-center hover:bg-white/20 transition">⏸️</button>
+      <button id="btnSound" class="w-9 h-9 md:w-10 md:h-10 rounded-full bg-[#FFD93D] text-[#0B2E3A] grid place-items-center font-black text-sm">♪</button>
+    </div>
+  </nav>
+
+  <!-- HUD -->
+  <div class="w-full bg-[#FFD93D] border-y-4 border-[#0B2E3A] flex items-center justify-between px-3 md:px-6 py-2 shrink-0 relative z-40">
+    <div class="flex gap-3 md:gap-5 items-center">
+      <div>
+        <div class="text-[10px] font-black tracking-[0.16em] opacity-60">DISTANCE</div>
+        <div class="flex items-baseline gap-1 -mt-1"><span id="hudScore" class="text-2xl md:text-[28px] font-black">0</span><span class="text-xs font-bold opacity-60">m</span></div>
+      </div>
+      <div class="w-px h-10 bg-black/10 hidden sm:block"></div>
+      <div class="hidden sm:block">
+        <div class="text-[10px] font-black tracking-[0.16em] opacity-60">FISH</div>
+        <div class="flex items-center gap-1 -mt-1"><span class="text-lg">🐟</span><span id="hudFish" class="text-xl font-black">0</span><span id="hudMult" class="ml-1 bg-[#0B2E3A] text-white text-[11px] px-1.5 py-0.5 rounded-full font-black hidden">x2</span></div>
+      </div>
+      <div class="hidden md:flex items-center gap-2 bg-[#0B2E3A] text-[#FFD93D] px-3 py-1.5 rounded-full text-xs font-black">
+        <span id="hudSpeed">12</span> KM/H <span class="opacity-50">•</span> <span id="hudCombo" class="text-white">NO CRASH STREAK</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <div class="hidden md:flex gap-1.5 text-[10px] font-bold">
+        <span class="bg-white border-2 border-black px-2 py-1 rounded-full">SPACE / TAP = HOP</span>
+        <span class="bg-white border-2 border-black px-2 py-1 rounded-full">↓ = DUCK</span>
+        <span class="bg-[#FF6B4A] text-white border-2 border-black px-2 py-1 rounded-full">DOUBLE TAP = FLAP</span>
+      </div>
+      <div id="speedBarWrap" class="w-[110px] md:w-[160px] h-3 bg-black/10 rounded-full overflow-hidden border-2 border-black hidden sm:block">
+        <div id="speedBar" class="h-full bg-gradient-to-r from-[#FF6B4A] to-[#FF3B30] transition-all" style="width:22%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Area -->
+  <div class="flex-1 relative flex flex-col items-center justify-center bg-[#0B2E3A] overflow-hidden" style="min-height:0">
+    <!-- Decorative sky -->
+    <div id="gameWrap" class="relative w-full max-w-[1100px] aspect-[16/9] md:h-[520px] md:aspect-auto bg-[#87D8F0] overflow-hidden border-x-0 md:border-x-[6px] border-[#0B2E3A] shadow-2xl">
+      <canvas id="game" width="1100" height="520" class="w-full h-full block"></canvas>
+      
+      <!-- Screen flash -->
+      <div id="flash" class="absolute inset-0 bg-white opacity-0 pointer-events-none transition-opacity duration-100"></div>
+
+      <!-- Touch Controls -->
+      <div class="absolute inset-x-0 bottom-0 flex md:hidden gap-2 p-2 pb-3 pointer-events-none">
+        <button id="touchDuck" class="pointer-events-auto flex-1 bg-white/90 backdrop-blur border-2 border-black rounded-2xl py-3 font-black text-sm active:scale-95 transition flex flex-col items-center gap-0.5">
+          <span class="text-xl leading-none">⬇️</span>DUCK
+        </button>
+        <button id="touchJump" class="pointer-events-auto flex-[1.6] bg-[#FFD93D] border-2 border-black rounded-2xl py-3 font-black text-base shadow-[0_4px_0_#0B2E3A] active:translate-y-1 active:shadow-none transition flex flex-col items-center">
+          <span class="text-xl leading-none">▲</span>HOP / FLAP
+        </button>
+      </div>
+
+      <!-- Start Screen -->
+      <div id="screenStart" class="absolute inset-0 grid place-items-center p-4 bg-gradient-to-b from-[#87D8F0]/60 via-[#87D8F0]/20 to-black/20">
+        <div class="w-full max-w-[720px] bg-[#FFF6E5] rounded-[28px] border-[4px] border-[#0B2E3A] overflow-hidden coast-shadow">
+          <div class="bg-[#0B2E3A] text-white px-5 md:px-8 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-2xl bg-[#FF6B4A] grid place-items-center text-2xl border-2 border-white">🪶</div>
+              <div>
+                <div class="bangers text-2xl leading-none text-[#FFD93D]">READY TO ROLL?</div>
+                <div class="text-xs opacity-70 tracking-wide">Help Pip the Pelican cruise the boardwalk without wiping out!</div>
+              </div>
+            </div>
+            <div class="hidden sm:block bg-[#FFD93D] text-[#0B2E3A] font-black px-3 py-1 rounded-full text-xs">v1.0 • JUICY EDITION</div>
+          </div>
+          <div class="grid md:grid-cols-[1.2fr_0.9fr] gap-0">
+            <div class="p-5 md:p-7">
+              <div class="inline-flex items-center gap-2 bg-[#FF6B4A] text-white text-xs font-black px-3 py-1 rounded-full">🔥 CORE LOOP IN 5 SECONDS</div>
+              <h1 class="bangers text-[42px] md:text-[52px] leading-[0.85] text-[#0B2E3A] mt-3">PEDAL.<br><span class="text-[#FF6B4A]">HOP.</span> SNACK.</h1>
+              <p class="text-sm leading-relaxed opacity-70 mt-2 font-medium">Dodge crabs, cones & puddles. Chain fish combos for turbo! The longer you survive, the faster the boardwalk flies by.</p>
+              <div class="grid grid-cols-3 gap-2 mt-4">
+                <div class="bg-white border-2 border-black rounded-2xl p-3 text-center">
+                  <div class="text-xl">🦀</div><div class="text-[11px] font-black">JUMP OVER</div><div class="text-[10px] opacity-60">Tap / Space</div>
+                </div>
+                <div class="bg-white border-2 border-black rounded-2xl p-3 text-center">
+                  <div class="text-xl">🐟</div><div class="text-[11px] font-black">COLLECT</div><div class="text-[10px] opacity-60">+100 + Combo</div>
+                </div>
+                <div class="bg-[#FFD93D] border-2 border-black rounded-2xl p-3 text-center">
+                  <div class="text-xl">🪶</div><div class="text-[11px] font-black">DOUBLE FLAP</div><div class="text-[10px] opacity-60">In Air</div>
+                </div>
+              </div>
+              <div class="flex gap-3 mt-5">
+                <button id="btnPlay" class="flex-1 bg-[#0B2E3A] text-white rounded-full py-3.5 font-black text-lg flex items-center justify-center gap-2 btn-press shadow-[0_6px_0_#000] active:shadow-none active:translate-y-1 transition-all">▶ START RIDE <span class="bg-white text-black rounded-full w-7 h-7 grid place-items-center text-sm">↗</span></button>
+                <button id="btnHow" class="bg-white border-2 border-black rounded-full px-5 font-black text-sm">HOW TO?</button>
+              </div>
+              <div class="flex gap-2 mt-3 text-[11px] font-bold opacity-60">
+                <span>⌨️ Keyboard</span>•<span>📱 Touch</span>•<span>🎮 Gamepad OK</span>
+              </div>
+            </div>
+            <div class="bg-[#E8F7FF] border-t-4 md:border-t-0 md:border-l-4 border-[#0B2E3A] p-5 flex flex-col">
+              <div class="bg-white rounded-3xl border-2 border-black p-4 flex-1 relative overflow-hidden">
+                <div class="absolute -top-6 -right-6 w-20 h-20 bg-[#FFD93D] rounded-full opacity-30"></div>
+                <div class="absolute top-2 right-3 text-[10px] font-black bg-[#0B2E3A] text-white px-2 py-1 rounded-full">PIP + BREEZER BIKE</div>
+                <div id="previewBike" class="mt-6 flex justify-center text-[88px] leading-none" style="animation:bob 1s ease-in-out infinite">🚲</div>
+                <div class="flex justify-center -mt-2"><span class="text-6xl">🪶</span></div>
+                <div class="grid grid-cols-2 gap-2 mt-4 text-xs">
+                  <div class="bg-[#FFF6E5] border border-black/10 rounded-xl p-2 text-center font-bold">Wheels spin faster<br><span class="text-[#FF6B4A]">as you accelerate</span></div>
+                  <div class="bg-[#FFF6E5] border border-black/10 rounded-xl p-2 text-center font-bold">Catch 3 fish →<br><span class="text-[#0B2E3A]">TURBO BURST!</span></div>
+                </div>
+              </div>
+              <div class="mt-3 bg-[#0B2E3A] text-white rounded-2xl p-3 flex items-center justify-between">
+                <div class="text-xs font-bold opacity-80">LOCAL LEGENDS</div>
+                <div class="text-sm font-black" id="previewBest">BEST 0m</div>
+              </div>
+              <div id="miniBoard" class="mt-2 space-y-1 text-xs"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pause -->
+      <div id="screenPause" class="absolute inset-0 bg-[#0B2E3A]/80 backdrop-blur-sm hidden place-items-center p-4">
+        <div class="bg-white rounded-[24px] border-4 border-black p-6 w-full max-w-[420px] text-center coast-shadow">
+          <div class="text-3xl">⏸️</div><div class="bangers text-4xl text-[#0B2E3A]">PAUSED</div>
+          <p class="text-sm opacity-60 font-medium">Take a breather. Pip's stretching his wings.</p>
+          <div class="grid grid-cols-2 gap-3 mt-5">
+            <button id="btnResume" class="bg-[#FFD93D] border-2 border-black rounded-full py-3 font-black">RESUME</button>
+            <button id="btnRestartFromPause" class="bg-[#0B2E3A] text-white rounded-full py-3 font-black">RESTART</button>
+          </div>
+          <button id="btnQuitPause" class="mt-3 text-xs font-black opacity-60 underline">QUIT TO MENU</button>
+        </div>
+      </div>
+
+      <!-- Game Over -->
+      <div id="screenOver" class="absolute inset-0 bg-gradient-to-b from-black/30 to-black/40 backdrop-blur-[2px] hidden place-items-center p-4">
+        <div class="w-full max-w-[560px] bg-[#FFF6E5] rounded-[28px] border-4 border-black overflow-hidden coast-shadow">
+          <div class="bg-[#FF6B4A] text-white px-6 py-4 flex items-center justify-between">
+            <div>
+              <div class="bangers text-3xl leading-none">WIPEOUT!</div>
+              <div class="text-xs font-bold opacity-90">Pip tumbled... but he'll be back!</div>
+            </div>
+            <div class="w-14 h-14 bg-white rounded-2xl grid place-items-center text-3xl border-2 border-black rotate-3">💥</div>
+          </div>
+          <div class="p-5 md:p-6">
+            <div class="grid grid-cols-3 gap-3">
+              <div class="bg-white border-2 border-black rounded-2xl p-3 text-center">
+                <div class="text-[10px] font-black opacity-60 tracking-widest">DISTANCE</div><div id="overScore" class="text-2xl font-black">0m</div>
+              </div>
+              <div class="bg-[#0B2E3A] text-white rounded-2xl p-3 text-center">
+                <div class="text-[10px] font-black opacity-60 tracking-widest">FISH</div><div id="overFish" class="text-2xl font-black">0</div>
+              </div>
+              <div class="bg-[#FFD93D] border-2 border-black rounded-2xl p-3 text-center">
+                <div class="text-[10px] font-black opacity-60 tracking-widest">TOTAL</div><div id="overTotal" class="text-2xl font-black">0</div>
+              </div>
+            </div>
+
+            <div id="newHigh" class="hidden mt-4 bg-gradient-to-r from-[#FFD93D] to-[#FFB800] border-2 border-black rounded-2xl p-3 flex items-center gap-3">
+              <div class="w-10 h-10 bg-white rounded-full grid place-items-center border-2 border-black">🏆</div>
+              <div><div class="font-black text-sm">NEW HIGH SCORE!</div><div class="text-xs opacity-70">You made the Beach Board!</div></div>
+              <div class="ml-auto font-black">+ <span id="highDiff">0</span></div>
+            </div>
+
+            <div id="nameEntry" class="hidden mt-3 flex gap-2">
+              <input id="inputName" maxlength="3" placeholder="AAA" class="flex-1 bg-white border-2 border-black rounded-full px-4 py-2.5 font-black tracking-[0.2em] text-center uppercase">
+              <button id="btnSaveScore" class="bg-[#0B2E3A] text-white px-5 rounded-full font-black">SAVE</button>
+            </div>
+
+            <div class="flex gap-3 mt-5">
+              <button id="btnRetry" class="flex-1 bg-[#0B2E3A] text-white rounded-full py-3.5 font-black text-lg flex justify-center items-center gap-2 shadow-[0_5px_0_#000] active:translate-y-1 active:shadow-none transition">↻ RIDE AGAIN</button>
+              <button id="btnMenu" class="bg-white border-2 border-black rounded-full px-6 font-black">MENU</button>
+            </div>
+
+            <div class="mt-5">
+              <div class="flex items-center justify-between">
+                <div class="text-xs font-black tracking-widest opacity-60">BEACH BOARD — TOP 5</div>
+                <button id="btnClearBoard" class="text-[11px] font-black opacity-40 hover:opacity-100 underline">clear</button>
+              </div>
+              <div id="board" class="mt-2 bg-white border-2 border-black rounded-2xl overflow-hidden divide-y divide-black/5"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom tip bar -->
+    <div class="w-full bg-[#0B2E3A] text-white/80 text-[11px] md:text-xs font-bold flex items-center justify-center gap-2 md:gap-6 py-2 px-3 text-center shrink-0">
+      <span class="hidden md:inline">💡 <b class="text-white">Pro Tip:</b> Stay low (duck) under gulls — hop over crabs. Chain 5 fish for rainbow turbo!</span>
+      <span class="md:hidden">💡 Chain 5 🐟 for turbo • Hold jump for higher hop</span>
+      <span class="bg-white/10 px-2 py-1 rounded-full border border-white/10 hidden sm:inline">Press <b class="text-white">P</b> to pause • <b class="text-white">R</b> to restart</span>
+    </div>
+  </div>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const hudScore = document.getElementById('hudScore');
+const hudFish = document.getElementById('hudFish');
+const hudMult = document.getElementById('hudMult');
+const hudBest = document.getElementById('hudBest');
+const hudSpeed = document.getElementById('hudSpeed');
+const hudCombo = document.getElementById('hudCombo');
+const speedBar = document.getElementById('speedBar');
+const previewBest = document.getElementById('previewBest');
+const gameWrap = document.getElementById('gameWrap');
+const flashEl = document.getElementById('flash');
+
+let W = 1100, H = 520;
+function resize(){
+  // keep internal resolution fixed for crisp gameplay, CSS scales it
+}
+resize();
+
+// Game state
+const STATE = { START:'start', PLAY:'playing', PAUSE:'pause', OVER:'over' };
+let state = STATE.START;
+let time = 0;
+let score = 0; // distance in meters
+let fishCollected = 0;
+let combo = 0;
+let comboTimer = 0;
+let best = parseInt(localStorage.getItem('pp_best')||'0');
+let board = JSON.parse(localStorage.getItem('pp_board')||'[]');
+let soundOn = true;
+
+// Audio quick bleeps
+let actx;
+function beep(freq=440, dur=0.08, type='square', gain=0.2){
+  if(!soundOn) return;
+  try{
+    if(!actx) actx = new (window.AudioContext||window.webkitAudioContext)();
+    const o = actx.createOscillator();
+    const g = actx.createGain();
+    o.type=type; o.frequency.value=freq;
+    o.connect(g); g.connect(actx.destination);
+    g.gain.value=gain;
+    o.start();
+    g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime+dur);
+    o.stop(actx.currentTime+dur);
+  }catch(e){}
+}
+
+// Player
+const player = {
+  x: 190, y: 0, vy:0, w:76, h:44,
+  groundY: 0, onGround:true, ducking:false, jumps:0,
+  wheelRot:0, bob:0, turbo:0,
+  shake:0,
+  widthDuck: 76, heightDuck: 28
+};
+
+// World
+let speed = 6.5; // base
+let maxSpeed = 14;
+let distance = 0;
+let spawnTimer = 0;
+let nextSpawn = 70;
+let obstacles = [];
+let collectibles = [];
+let decorations = []; // clouds, palms
+let particles = [];
+let lastFishTime = 0;
+
+function resetGame(){
+  time=0; score=0; fishCollected=0; combo=0; comboTimer=0;
+  speed = 6.8;
+  distance=0;
+  obstacles=[]; collectibles=[]; particles=[];
+  player.y = groundLevel() - player.h;
+  player.vy=0; player.onGround=true; player.ducking=false; player.jumps=0; player.turbo=0;
+  spawnTimer=0; nextSpawn=90;
+  lastFishTime=0;
+}
+
+function groundLevel(){ return H - 78; }
+
+// spawn helpers
+function rand(min,max){ return Math.random()*(max-min)+min }
+function choice(arr){ return arr[Math.floor(Math.random()*arr.length)] }
+
+const OB_TYPES = [
+  { id:'cone', w:30, h:30, emoji:'🚧', color:'#FF6B4A' },
+  { id:'crab', w:36, h:28, emoji:'🦀', color:'#E63E3E' },
+  { id:'rock', w:38, h:26, emoji:'🪨', color:'#8B7355' },
+  { id:'puddle', w:58, h:10, emoji:'💧', color:'#4DA6FF' },
+  { id:'gull', w:52, h:18, emoji:'🕊️', color:'#FFFFFF', flying:true, yOffset:-70 },
+];
+
+function spawnObstacle(){
+  const difficulty = Math.min(1, distance/3000); // 0..1
+  let pool = [...OB_TYPES];
+  // early game less flying
+  if(distance<400) pool = pool.filter(p=>!p.flying);
+  const t = choice(pool);
+  const y = t.flying ? groundLevel()-70 - rand(0,22) : groundLevel()-t.h;
+  obstacles.push({ ...t, x: W+40, y, passed:false, wob: Math.random()*Math.PI*2 });
+  // sometimes double
+  if(Math.random()<0.18+difficulty*0.15){
+    setTimeout(()=> {
+      if(state!==STATE.PLAY) return;
+      const t2 = choice(pool.filter(p=>!p.flying));
+      obstacles.push({ ...t2, x: W+160 + rand(0,60), y: groundLevel()-t2.h, passed:false, wob:0 });
+    }, 180);
+  }
+}
+function spawnFish(){
+  const y = rand(groundLevel()-110, groundLevel()-38);
+  collectibles.push({ x: W+20, y, w:28, h:18, taken:false, phase: Math.random()*Math.PI*2, bob:0 });
+}
+
+// Init decorations
+for(let i=0;i<6;i++){
+  decorations.push({type:'cloud', x: rand(0,W), y: rand(40,140), s: rand(0.7,1.2), speed: rand(0.2,0.5) });
+}
+for(let i=0;i<4;i++){
+  decorations.push({type:'palm', x: rand(0,W), y: groundLevel(), s: rand(0.8,1.1)});
+}
+
+function createParticles(x,y, n=10, opts={}){
+  for(let i=0;i<n;i++){
+    particles.push({
+      x, y, vx: rand(-4,4)+ (opts.vx||0), vy: rand(-6,-1),
+      life:1, decay: rand(0.02,0.05), r: rand(2,5),
+      color: opts.color || choice(['#FFD93D','#FF6B4A','#87D8F0','#FFF6E5']),
+      shape: Math.random()<0.5?'circle':'rect'
+    });
+  }
+}
+function triggerShake(intensity=6){
+  player.shake = intensity;
+  gameWrap.classList.remove('shake');
+  void gameWrap.offsetWidth;
+  gameWrap.classList.add('shake');
+  setTimeout(()=>gameWrap.classList.remove('shake'),300);
+}
+function flash(color='rgba(255,217,61,0.35)'){
+  flashEl.style.background = color;
+  flashEl.style.opacity = '1';
+  setTimeout(()=> flashEl.style.opacity='0', 90);
+}
+
+// Input
+let keys = {};
+let jumpHeld = false;
+let jumpPressBuffered = 0; // coyote buffer
+
+window.addEventListener('keydown', e=>{
+  if(['Space','ArrowUp','ArrowDown','KeyR','KeyP','Escape'].includes(e.code)) e.preventDefault();
+  keys[e.code]=true;
+  if(e.code==='Space' || e.code==='ArrowUp' || e.code==='KeyW'){
+    doJump();
+    if(state===STATE.START) startGame();
+  }
+  if(e.code==='ArrowDown' || e.code==='KeyS'){
+    player.ducking = true;
+  }
+  if(e.code==='KeyR'){
+    if(state===STATE.PLAY || state===STATE.OVER) { resetGame(); state=STATE.PLAY; hideOverlays(); beep(600,0.06); }
+  }
+  if(e.code==='KeyP' || e.code==='Escape'){
+    if(state===STATE.PLAY) pauseGame();
+    else if(state===STATE.PAUSE) resumeGame();
+  }
+});
+window.addEventListener('keyup', e=>{
+  keys[e.code]=false;
+  if(e.code==='ArrowDown' || e.code==='KeyS') player.ducking=false;
+  if(e.code==='Space' || e.code==='ArrowUp' || e.code==='KeyW') jumpHeld=false;
+});
+
+// Touch
+function doJump(){
+  jumpHeld = true;
+  jumpPressBuffered = 8;
+  if(state!==STATE.PLAY) return;
+  // double jump / flap
+  if(player.onGround){
+    player.vy = -13.5;
+    player.onGround=false;
+    player.jumps=1;
+    createParticles(player.x+20, player.y+player.h, 6, {color:'#FFF6E5'});
+    beep(520,0.09,'square',0.18);
+    player.bob = -6;
+  } else if(player.jumps===1){
+    player.vy = -10.5;
+    player.jumps=2;
+    createParticles(player.x+10, player.y+18, 10, {color:'#87D8F0'});
+    beep(720,0.1,'triangle',0.22);
+    flash('rgba(135,216,240,0.25)');
+    // feather flap anim
+  }
+  if(jumpHeld) player.wheelRot -=0.2;
+}
+function doDuck(on){
+  if(state!==STATE.PLAY) return;
+  player.ducking = on;
+}
+
+// Touch buttons
+const touchJump = document.getElementById('touchJump');
+const touchDuck = document.getElementById('touchDuck');
+let duckTouch=false;
+touchJump.addEventListener('touchstart', e=>{ e.preventDefault(); doJump(); },{passive:false});
+touchJump.addEventListener('touchend', e=>{ e.preventDefault(); jumpHeld=false; });
+touchJump.addEventListener('mousedown', e=>{ e.preventDefault(); doJump(); });
+touchJump.addEventListener('mouseup', ()=> jumpHeld=false);
+
+touchDuck.addEventListener('touchstart', e=>{ e.preventDefault(); duckTouch=true; doDuck(true); },{passive:false});
+touchDuck.addEventListener('touchend', e=>{ e.preventDefault(); duckTouch=false; doDuck(false); });
+touchDuck.addEventListener('mousedown', ()=>{ doDuck(true) });
+touchDuck.addEventListener('mouseup', ()=> doDuck(false));
+touchDuck.addEventListener('mouseleave', ()=> doDuck(false));
+
+// Also tap anywhere on canvas to jump (except buttons)
+canvas.addEventListener('pointerdown', e=>{
+  if(e.target!==canvas) return;
+  // ignore if start/over screens visible
+  if(state===STATE.PLAY) doJump();
+});
+canvas.addEventListener('pointerup', ()=> jumpHeld=false);
+
+// Buttons
+document.getElementById('btnPlay').addEventListener('click', startGame);
+document.getElementById('btnHow').addEventListener('click', ()=>{
+  alert('HOW TO PLAY:\n\n• Tap / Space to HOP. Tap again mid-air for a feather FLAP (double jump)\n• Hold Down / Duck button to slide under seagulls\n• Grab 🐟 fish to build combo & trigger TURBO at 3 fish\n• Stay alive — speed ramps up! Crash = wipeout.\n\nTip: Light taps = small hops, hold jump = higher hop!');
+});
+document.getElementById('btnPause').addEventListener('click', ()=>{
+  if(state===STATE.PLAY) pauseGame(); else if(state===STATE.PAUSE) resumeGame();
+});
+document.getElementById('btnSound').addEventListener('click', (e)=>{
+  soundOn=!soundOn;
+  e.currentTarget.textContent = soundOn ? '♪' : '🔇';
+  e.currentTarget.classList.toggle('bg-[#FFD93D]');
+  e.currentTarget.classList.toggle('bg-white');
+});
+document.getElementById('btnResume').addEventListener('click', resumeGame);
+document.getElementById('btnRestartFromPause').addEventListener('click', ()=>{
+  resetGame(); state=STATE.PLAY; hideOverlays();
+});
+document.getElementById('btnQuitPause').addEventListener('click', ()=>{
+  state=STATE.START; showStart(); renderBoardMini();
+});
+document.getElementById('btnRetry').addEventListener('click', ()=>{
+  resetGame(); state=STATE.PLAY; hideOverlays(); beep(600,0.07);
+});
+document.getElementById('btnMenu').addEventListener('click', ()=>{
+  state=STATE.START; showStart(); renderBoardMini();
+});
+document.getElementById('btnSaveScore').addEventListener('click', saveBoardEntry);
+document.getElementById('btnClearBoard').addEventListener('click', ()=>{
+  if(confirm('Clear local leaderboard?')){ board=[]; localStorage.setItem('pp_board', JSON.stringify(board)); renderBoard(); renderBoardMini(); }
+});
+
+function startGame(){
+  resetGame();
+  state=STATE.PLAY;
+  hideOverlays();
+  beep(600,0.08); setTimeout(()=>beep(800,0.08),90);
+}
+function pauseGame(){
+  if(state!==STATE.PLAY) return;
+  state=STATE.PAUSE;
+  document.getElementById('screenPause').classList.remove('hidden');
+  document.getElementById('screenPause').classList.add('grid');
+}
+function resumeGame(){
+  state=STATE.PLAY;
+  document.getElementById('screenPause').classList.add('hidden');
+  document.getElementById('screenPause').classList.remove('grid');
+}
+function hideOverlays(){
+  document.getElementById('screenStart').classList.add('hidden');
+  document.getElementById('screenPause').classList.add('hidden');
+  document.getElementById('screenPause').classList.remove('grid');
+  document.getElementById('screenOver').classList.add('hidden');
+  document.getElementById('screenOver').classList.remove('grid');
+}
+function showStart(){
+  document.getElementById('screenStart').classList.remove('hidden');
+  document.getElementById('screenOver').classList.add('hidden');
+  document.getElementById('screenPause').classList.add('hidden');
+}
+function gameOver(){
+  state=STATE.OVER;
+  const total = Math.floor(score + fishCollected*120 + combo*10);
+  document.getElementById('overScore').textContent = Math.floor(score)+'m';
+  document.getElementById('overFish').textContent = fishCollected;
+  document.getElementById('overTotal').textContent = total;
+  // check high
+  const isNewHigh = total > best;
+  document.getElementById('newHigh').classList.toggle('hidden', !isNewHigh);
+  document.getElementById('highDiff').textContent = isNewHigh ? (total - best) : 0;
+  document.getElementById('nameEntry').classList.toggle('hidden', !isNewHigh);
+  if(isNewHigh) {
+    best = total;
+    localStorage.setItem('pp_best', best);
+    hudBest.textContent = best;
+    previewBest.textContent = 'BEST '+best+'m';
+    setTimeout(()=> document.getElementById('inputName').focus(), 100);
+  }
+  // if not new high but in top5? still allow entry? simplify: only new best allows entry, but we still show board
+  // prepare board entry temp
+  window._pendingScore = { score: total, dist: Math.floor(score), fish: fishCollected, date: new Date().toLocaleDateString() };
+  renderBoard();
+  document.getElementById('screenOver').classList.remove('hidden');
+  document.getElementById('screenOver').classList.add('grid');
+  beep(220,0.3,'sawtooth',0.18); setTimeout(()=>beep(160,0.4,'square',0.18),120);
+  triggerShake(10);
+}
+
+function saveBoardEntry(){
+  const name = (document.getElementById('inputName').value || 'PIP').toUpperCase().slice(0,3).padEnd(3,'_');
+  const entry = { name, ...window._pendingScore };
+  board.push(entry);
+  board.sort((a,b)=> b.score - a.score);
+  board = board.slice(0,5);
+  localStorage.setItem('pp_board', JSON.stringify(board));
+  document.getElementById('nameEntry').classList.add('hidden');
+  renderBoard(); renderBoardMini();
+  beep(880,0.12,'square',0.2);
+}
+function renderBoard(){
+  const el = document.getElementById('board');
+  if(!board.length){ el.innerHTML = `<div class="p-4 text-center text-sm opacity-50">No legends yet — be the first!</div>`; return; }
+  el.innerHTML = board.map((r,i)=>`
+    <div class="flex items-center gap-3 px-3 py-2.5 ${i===0?'bg-[#FFF6E5]':''}">
+      <div class="w-7 h-7 rounded-full bg-[#0B2E3A] text-white grid place-items-center text-xs font-black">${i+1}</div>
+      <div class="font-black tracking-widest">${r.name}</div>
+      <div class="ml-auto text-xs opacity-60">${r.dist}m • ${r.fish}🐟</div>
+      <div class="font-black text-sm bg-[#FFD93D] border border-black px-2.5 py-1 rounded-full">${r.score}</div>
+    </div>
+  `).join('');
+}
+function renderBoardMini(){
+  const el=document.getElementById('miniBoard');
+  if(!board.length){ el.innerHTML=`<div class="text-xs opacity-50 text-center py-2">No scores yet</div>`; return;}
+  el.innerHTML = board.slice(0,3).map((r,i)=> `<div class="flex justify-between bg-white border border-black/10 rounded-full px-3 py-1 font-bold"><span>${i+1}. ${r.name}</span><span>${r.score}</span></div>`).join('');
+}
+hudBest.textContent = best;
+previewBest.textContent = 'BEST '+best+'m';
+renderBoard(); renderBoardMini();
+
+// Core update
+let lastTime=0;
+function update(dt){
+  time+=dt;
+  if(state!==STATE.PLAY) return;
+
+  // speed ramp
+  const targetSpeed = Math.min(maxSpeed, 6.8 + distance*0.003 + fishCollected*0.02 + (combo>4?1.2:0));
+  speed += (targetSpeed - speed)*0.02;
+  if(player.turbo>0){
+    speed += 2.5;
+    player.turbo -= dt;
+    if(player.turbo<=0) { player.turbo=0; flash('rgba(255,255,255,0.2)'); }
+  }
+  distance += speed*0.6;
+  score = distance;
+
+  // physics
+  const gravity = 0.92;
+  const jumpHoldBoost = jumpHeld && player.vy<0 ? -0.18 : 0;
+  player.vy += gravity + jumpHoldBoost*0; // minimal
+  // variable jump hold
+  if(jumpHeld && player.vy< -2) player.vy += -0.12;
+
+  player.y += player.vy;
+
+  const g = groundLevel();
+  const curH = player.ducking && player.onGround ? player.heightDuck : player.h;
+  const curY = player.y + (player.h - curH);
+  if(curY + curH >= g){
+    if(!player.onGround){
+      // landing
+      createParticles(player.x+30, g, 8, {color:'#E8DCC6'});
+      beep(300,0.06,'square',0.12);
+      if(Math.abs(player.vy)>12) triggerShake(4);
+    }
+    player.y = g - player.h;
+    player.vy=0;
+    player.onGround=true;
+    player.jumps=0;
+    // duck adjust
+    if(player.ducking) player.y = g - curH;
+  } else {
+    player.onGround=false;
+  }
+
+  // combo timer
+  if(combo>0){
+    comboTimer -= dt;
+    if(comboTimer<=0){ combo=0; hudMult.classList.add('hidden'); hudCombo.textContent='NO CRASH STREAK'; }
+  }
+
+  // spawn logic
+  spawnTimer += speed*0.15 + dt*0.06;
+  if(spawnTimer > nextSpawn){
+    spawnTimer=0;
+    nextSpawn = rand(56, 96) - Math.min(28, distance*0.01);
+    // 55% obstacle, 45% fish, but not overlapping too much
+    if(Math.random()<0.58) spawnObstacle();
+    else spawnFish();
+    // extra fish chance
+    if(Math.random()<0.22) spawnFish();
+  }
+
+  // move entities
+  const scroll = speed;
+  obstacles.forEach(o=>{
+    o.x -= scroll;
+    o.wob+=0.14;
+  });
+  collectibles.forEach(f=>{
+    f.x -= scroll;
+    f.phase+=0.12;
+    f.y += Math.sin(f.phase)*0.25;
+  });
+  decorations.forEach(d=>{
+    const par = d.type==='cloud'? 0.5 : 0.95;
+    d.x -= scroll*par*0.25;
+    if(d.x < -120) d.x = W+ rand(20,120);
+  });
+
+  // particles
+  particles.forEach(p=>{
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.28; p.life-=p.decay;
+  });
+  particles = particles.filter(p=>p.life>0 && p.y < H);
+
+  // collision
+  const pBox = {
+    x: player.x+12,
+    y: player.ducking && player.onGround ? g - player.heightDuck +6 : player.y+8,
+    w: player.ducking? 56 : 48,
+    h: player.ducking? 20 : 28
+  };
+
+  // obstacles
+  for(let i=obstacles.length-1;i>=0;i--){
+    const o=obstacles[i];
+    if(o.x + o.w < -40) { obstacles.splice(i,1); continue; }
+    // hitbox shrink a bit
+    const oBox = { x:o.x+4, y:o.y+4, w:o.w-8, h:o.h-6 };
+    // puddle is low - only trips if not jumping enough
+    let hit=false;
+    if(o.id==='puddle'){
+      // if player on ground and over puddle, slip but not instant death? make it cause stumble: slow + shake
+      if(pBox.x < oBox.x+oBox.w && pBox.x+pBox.w > oBox.x && pBox.y+pBox.h > oBox.y){
+        if(player.onGround){
+          // slip
+          speed = Math.max(5, speed*0.86);
+          createParticles(o.x+o.w/2, o.y, 10, {color:'#4DA6FF'});
+          triggerShake(5);
+          beep(180,0.15,'triangle',0.2);
+          obstacles.splice(i,1);
+        }
+      }
+    } else {
+      if(rectsOverlap(pBox,oBox)) hit=true;
+      if(hit){
+        createParticles(player.x+player.w/2, player.y+18, 16, {color:'#FF6B4A'});
+        gameOver();
+        return;
+      }
+    }
+  }
+  // collectibles
+  for(let i=collectibles.length-1;i>=0;i--){
+    const f=collectibles[i];
+    if(f.x+f.w < -30){ collectibles.splice(i,1); continue; }
+    const fBox={x:f.x,y:f.y,w:f.w,h:f.h};
+    if(rectsOverlap(pBox,fBox) && !f.taken){
+      f.taken=true;
+      fishCollected++;
+      lastFishTime=time;
+      combo++;
+      comboTimer= 160; // frames ~ 2.6s
+      createParticles(f.x+f.w/2,f.y+f.h/2,12,{color:'#FFD93D'});
+      flash();
+      beep( 600 + combo*40,0.11,'square',0.22);
+      if(combo>=3){
+        hudMult.textContent = 'x'+Math.min(5, Math.floor(combo/2)+1);
+        hudMult.classList.remove('hidden');
+        if(combo===3 || combo===5 || combo===8){
+          player.turbo = 90; // ~1.5s
+          createParticles(player.x+30, player.y+20, 18, {color:'#FF6B4A'});
+          beep(900,0.18,'sawtooth',0.22);
+          hudCombo.textContent = combo>=5 ? 'TURBO!' : 'COMBO x'+combo;
+          triggerShake(3);
+        }
+      }
+      collectibles.splice(i,1);
+    }
+  }
+
+  // wheel rotation
+  player.wheelRot += speed*0.55 + (player.turbo? 6:0);
+  player.bob += 0.32;
+  // HUD
+  hudScore.textContent = Math.floor(score);
+  hudFish.textContent = fishCollected;
+  hudSpeed.textContent = Math.floor(speed*4.2);
+  const pct = ((speed-6)/ (maxSpeed-6))*100;
+  speedBar.style.width = Math.max(8, Math.min(100, pct))+'%';
+  if(combo>0) hudCombo.textContent = combo>=5? 'FIRE STREAK '+combo : 'COMBO '+combo;
+}
+
+function rectsOverlap(a,b){
+  return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
+}
+
+// Render
+function draw(){
+  // clear
+  ctx.clearRect(0,0,W,H);
+
+  // sky gradient
+  const grad = ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'#8ED7F5');
+  grad.addColorStop(0.55,'#C8EEFF');
+  grad.addColorStop(1,'#FFE8A8');
+  ctx.fillStyle=grad;
+  ctx.fillRect(0,0,W,H);
+
+  // sun
+  ctx.fillStyle='#FFD93D';
+  ctx.strokeStyle='#0B2E3A';
+  ctx.lineWidth=4;
+  ctx.beginPath(); ctx.arc(920, 88, 46,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  // sun rays
+  ctx.strokeStyle='rgba(11,46,58,0.08)';
+  ctx.lineWidth=2;
+  for(let i=0;i<8;i++){
+    const ang = i*Math.PI/4 + time*0.002;
+    ctx.beginPath();
+    ctx.moveTo(920+Math.cos(ang)*58, 88+Math.sin(ang)*58);
+    ctx.lineTo(920+Math.cos(ang)*78, 88+Math.sin(ang)*78);
+    ctx.stroke();
+  }
+
+  // clouds
+  decorations.forEach(d=>{
+    if(d.type==='cloud'){
+      ctx.fillStyle='rgba(255,255,255,0.95)';
+      ctx.strokeStyle='rgba(11,46,58,0.9)';
+      ctx.lineWidth=2.5;
+      const x=d.x, y=d.y, s=d.s;
+      drawCloud(x,y,s);
+    }
+  });
+
+  // distant ocean / hills
+  ctx.fillStyle='#5EB3D6';
+  ctx.beginPath();
+  ctx.moveTo(0, 220);
+  for(let x=0;x<=W;x+=18){
+    ctx.lineTo(x, 210 + Math.sin(x*0.012 + time*0.003)*8 + Math.sin(x*0.02)*6);
+  }
+  ctx.lineTo(W, 260); ctx.lineTo(0,260); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.35)';
+  for(let x=0;x<W;x+=120){
+    ctx.beginPath();
+    ctx.moveTo(x+ (time*0.05 %120), 232);
+    ctx.quadraticCurveTo(x+20,228, x+40,232); ctx.strokeStyle='white'; ctx.lineWidth=1.2; ctx.stroke();
+  }
+
+  // boardwalk road
+  const gy = groundLevel();
+  // road base
+  ctx.fillStyle='#E8DCC6';
+  ctx.fillRect(0, gy, W, H-gy);
+  // planks
+  ctx.strokeStyle='rgba(11,46,58,0.12)';
+  ctx.lineWidth=1;
+  for(let x= - (distance%32); x<W; x+=32){
+    ctx.beginPath(); ctx.moveTo(x, gy); ctx.lineTo(x, H); ctx.stroke();
+  }
+  ctx.fillStyle='#0B2E3A';
+  ctx.fillRect(0, gy, W, 6);
+  // side lines
+  ctx.fillStyle='#FF6B4A';
+  ctx.fillRect(0, gy+14, W, 3);
+  ctx.fillRect(0, gy+30, W, 2);
+  // dashed center
+  ctx.fillStyle='white';
+  for(let x= - (distance%40); x<W; x+=40){
+    ctx.fillRect(x, gy+20, 18, 3);
+  }
+
+  // palm decorations on horizon
+  decorations.forEach(d=>{
+    if(d.type==='palm'){
+      const x=d.x, s=d.s;
+      // trunk
+      ctx.fillStyle='#8B5E3C';
+      ctx.strokeStyle='#0B2E3A'; ctx.lineWidth=2;
+      ctx.beginPath();
+      ctx.roundRect(x, gy-42*s, 10, 42, 4);
+      ctx.fill(); ctx.stroke();
+      // leaves
+      ctx.fillStyle='#2E8B57';
+      for(let i=0;i<5;i++){
+        const ang = -0.9 + i*0.45 + Math.sin(time*0.003 + x*0.01)*0.12;
+        ctx.save();
+        ctx.translate(x+5, gy-42*s);
+        ctx.rotate(ang);
+        ctx.beginPath(); ctx.ellipse(0, -8, 18, 7, 0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.restore();
+      }
+      // coconuts
+      ctx.fillStyle='#6B3A1F';
+      ctx.beginPath(); ctx.arc(x+3, gy-38, 3,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x+8, gy-40, 2.5,0,Math.PI*2); ctx.fill();
+    }
+  });
+
+  // particles behind player
+  particles.forEach(p=>{
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle=p.color;
+    ctx.strokeStyle='rgba(0,0,0,0.15)'; ctx.lineWidth=1;
+    if(p.shape==='circle'){ ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill(); }
+    else { ctx.fillRect(p.x,p.y,p.r*1.2,p.r); }
+  });
+  ctx.globalAlpha=1;
+
+  // obstacles
+  obstacles.forEach(o=>{
+    ctx.save();
+    ctx.translate(o.x, o.y);
+    if(o.id==='puddle'){
+      ctx.fillStyle='rgba(77,166,255,0.45)';
+      ctx.strokeStyle='#0B2E3A'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.ellipse(o.w/2, 6, o.w/2, 7,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      // shine
+      ctx.fillStyle='rgba(255,255,255,0.7)';
+      ctx.beginPath(); ctx.ellipse(o.w*0.35, 4, 10,3,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#0B2E3A'; ctx.font='700 10px Fredoka'; ctx.fillText('SPLASH', 10, 10);
+    } else if(o.flying){
+      // gull
+      const flap = Math.sin(o.wob)*6;
+      ctx.fillStyle='white'; ctx.strokeStyle='#0B2E3A'; ctx.lineWidth=2.5;
+      ctx.beginPath();
+      // wings
+      ctx.moveTo(6, 10+flap); ctx.quadraticCurveTo(16, 2, 26, 10); ctx.quadraticCurveTo(16, 14, 6,10);
+      ctx.moveTo(o.w-6, 10-flap); ctx.quadraticCurveTo(o.w-16, 2, o.w-26,10); ctx.quadraticCurveTo(o.w-16,14, o.w-6,10);
+      ctx.fill(); ctx.stroke();
+      // body
+      ctx.fillStyle='#FFD93D';
+      ctx.beginPath(); ctx.ellipse(o.w/2, 12, 10,6,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(o.w/2+6, 9, 2.2,0,Math.PI*2); ctx.fill();
+    } else {
+      // shadow
+      ctx.fillStyle='rgba(0,0,0,0.12)';
+      ctx.beginPath(); ctx.ellipse(o.w/2, o.h-2, o.w*0.4, 4,0,0,Math.PI*2); ctx.fill();
+      // base
+      ctx.fillStyle=o.color; ctx.strokeStyle='#0B2E3A'; ctx.lineWidth=3;
+      if(o.id==='cone'){
+        ctx.beginPath();
+        ctx.moveTo(4, o.h); ctx.lineTo(o.w/2, 2); ctx.lineTo(o.w-4, o.h); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle='white'; ctx.fillRect(7, o.h-9, o.w-14, 5);
+      } else if(o.id==='crab'){
+        ctx.fillStyle='#FF4D4D';
+        ctx.beginPath(); ctx.roundRect(2,8, o.w-4, 18, 8); ctx.fill(); ctx.stroke();
+        // eyes
+        ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(10,10,4,0,Math.PI*2); ctx.arc(o.w-10,10,4,0,Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle='black'; ctx.beginPath(); ctx.arc(10,10,1.8,0,Math.PI*2); ctx.arc(o.w-10,10,1.8,0,Math.PI*2); ctx.fill();
+        // legs
+        ctx.strokeStyle='#0B2E3A'; ctx.lineWidth=2; ctx.beginPath();
+        for(let k=0;k<3;k++){ ctx.moveTo(4+k*7,18); ctx.lineTo(1+k*7,24); }
+        for(let k=0;k<3;k++){ ctx.moveTo(o.w-4-k*7,18); ctx.lineTo(o.w-1-k*7,24); }
+        ctx.stroke();
+        ctx.font='10px serif'; ctx.fillStyle='white'; ctx.fillText('🦀', o.w/2-6, 20);
+      } else if(o.id==='rock'){
+        ctx.beginPath(); ctx.ellipse(o.w/2, o.h/2+3, o.w/2-2, o.h/2-2,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle='rgba(255,255,255,0.25)'; ctx.beginPath(); ctx.ellipse(o.w*0.35, o.h*0.35, 7,4, -0.3,0,Math.PI*2); ctx.fill();
+      }
+    }
+    ctx.restore();
+  });
+
+  // collectibles
+  collectibles.forEach(f=>{
+    ctx.save();
+    ctx.translate(f.x+f.w/2, f.y+f.h/2 + Math.sin(f.phase)*3);
+    // shadow
+    ctx.fillStyle='rgba(0,0,0,0.1)'; ctx.beginPath(); ctx.ellipse(0,16,10,3,0,0,Math.PI*2); ctx.fill();
+    // fish body
+    ctx.fillStyle='#FFD93D'; ctx.strokeStyle='#0B2E3A'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.ellipse(0,0,14,8,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    // tail
+    ctx.fillStyle='#FF6B4A'; ctx.beginPath(); ctx.moveTo(-14,0); ctx.lineTo(-20,-6); ctx.lineTo(-20,6); ctx.closePath(); ctx.fill(); ctx.stroke();
+    // eye
+    ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(5,-2,3,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='black'; ctx.beginPath(); ctx.arc(6,-2,1.5,0,Math.PI*2); ctx.fill();
+    // shine
+    ctx.fillStyle='rgba(255,255,255,0.8)'; ctx.beginPath(); ctx.arc(-2,-4,2,0,Math.PI*2); ctx.fill();
+    // combo glow
+    if(combo>2){
+      ctx.strokeStyle='rgba(255,217,61,0.9)'; ctx.lineWidth=1.2; ctx.setLineDash([3,3]);
+      ctx.beginPath(); ctx.ellipse(0,0,18,12,0,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+    }
+    ctx.restore();
+    // bob label
+    ctx.fillStyle='#0B2E3A'; ctx.font='800 10px Fredoka'; ctx.fillText('+100', f.x+2, f.y-8);
+  });
+
+  // Player (pelican + bike)
+  drawPlayer();
+
+  // turbo trail
+  if(player.turbo>0){
+    ctx.fillStyle=`rgba(255,107,74,${0.18 + Math.sin(time*0.05)*0.08})`;
+    ctx.fillRect(player.x-30, gy+8, 50, 6);
+    ctx.fillStyle='rgba(255,217,61,0.9)';
+    for(let i=0;i<4;i++){
+      ctx.beginPath(); ctx.arc(player.x-10 - i*14 + Math.random()*4, gy-6 + Math.random()*12, 2+Math.random()*2,0,Math.PI*2); ctx.fill();
+    }
+  }
+
+  // speed lines when fast
+  if(speed>10){
+    ctx.strokeStyle='rgba(255,255,255,0.45)'; ctx.lineWidth=2;
+    for(let i=0;i<6;i++){
+      const x = ( (time* (0.6+speed*0.12) + i*150) % (W+200)) -20;
+      const y = 300 + (i%3)*30;
+      ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+ 30 + speed*2, y); ctx.stroke();
+    }
+  }
+
+  // vignette
+  ctx.fillStyle='rgba(11,46,58,0.02)';
+  ctx.fillRect(0,0,W,8); ctx.fillRect(0,H-8,W,8);
+}
+
+function drawPlayer(){
+  const gy = groundLevel();
+  const onGround = player.onGround;
+  const y = player.y;
+  const x = player.x;
+  const bob = Math.sin(player.bob)* (onGround? 1.2:0);
+  const tilt = player.vy *0.55; // lean forward when falling
+  const duck = player.ducking && onGround;
+
+  ctx.save();
+  ctx.translate(x, y+ bob);
+
+  // shadow
+  ctx.fillStyle='rgba(0,0,0,0.14)';
+  ctx.beginPath(); ctx.ellipse(36, gy - y + 6 -bob, 34, 6,0,0,Math.PI*2); ctx.fill();
+
+  // bike
+  ctx.save();
+  // bike tilt when airborne
+  const bikeTilt = duck? 0.12 : tilt*0.015;
+  ctx.translate(36, 22);
+  ctx.rotate(bikeTilt);
+  ctx.translate(-36, -22);
+
+  // wheels
+  function drawWheel(cx, cy, rot){
+    ctx.fillStyle='#0B2E3A'; ctx.strokeStyle='#0B2E3A'; ctx.lineWidth=4;
+    ctx.beginPath(); ctx.arc(cx, cy, 15,0,Math.PI*2); ctx.stroke();
+    ctx.fillStyle='white';
+    ctx.beginPath(); ctx.arc(cx, cy, 11,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    // spokes
+    ctx.strokeStyle='#0B2E3A'; ctx.lineWidth=2;
+    for(let i=0;i<3;i++){
+      const a = rot + i*Math.PI*0.66;
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+Math.cos(a)*10, cy+Math.sin(a)*10); ctx.stroke();
+    }
+    ctx.fillStyle='#0B2E3A'; ctx.beginPath(); ctx.arc(cx,cy,2.2,0,Math.PI*2); ctx.fill();
+  }
+  drawWheel(14, 28, player.wheelRot);
+  drawWheel(58, 28, player.wheelRot*1.02);
+
+  // frame
+  ctx.strokeStyle='#FF6B4A'; ctx.lineWidth=4; ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.beginPath();
+  // main triangle
+  ctx.moveTo(14,28); ctx.lineTo(34,12); ctx.lineTo(58,28); ctx.moveTo(34,12); ctx.lineTo(30,28);
+  ctx.stroke();
+  // handlebars and seat
+  ctx.strokeStyle='#0B2E3A'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(60,14); ctx.lineTo(66,10); ctx.stroke(); // handle
+  ctx.fillStyle='#FFD93D'; ctx.strokeStyle='#0B2E3A'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.roundRect(24, 8, 16,6,3); ctx.fill(); ctx.stroke(); // seat
+  ctx.beginPath(); ctx.roundRect(60,10,10,4,2); ctx.fill(); ctx.stroke(); // grip
+
+  // chain / pedal crank
+  ctx.fillStyle='#0B2E3A'; ctx.beginPath(); ctx.arc(30,28,5,0,Math.PI*2); ctx.fill();
+  const pedalAng = player.wheelRot*0.9;
+  ctx.strokeStyle='#0B2E3A'; ctx.lineWidth=3;
+  for(let k=0;k<2;k++){
+    const a = pedalAng + k*Math.PI;
+    const px = 30+Math.cos(a)*7, py=28+Math.sin(a)*7;
+    ctx.beginPath(); ctx.moveTo(30,28); ctx.lineTo(px,py); ctx.stroke();
+    ctx.fillStyle='#FFD93D'; ctx.strokeStyle='#0B2E3A'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.roundRect(px-5, py-2, 10,4,2); ctx.fill(); ctx.stroke();
+  }
+
+  ctx.restore(); // bike
+
+  // pelican body
+  // squash stretch on jump
+  let squash = 1;
+  if(!onGround) squash = 1 + Math.abs(player.vy)*0.005;
+  ctx.save();
+  ctx.translate(38, duck? 16:10);
+  ctx.scale(squash, 1/squash);
+
+  // body
+  ctx.fillStyle='#FFFFFF'; ctx.strokeStyle='#0B2E3A'; ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.ellipse(0, 6, 18, 13,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  // belly
+  ctx.fillStyle='#FFF6E5';
+  ctx.beginPath(); ctx.ellipse(1,9,10,6,0,0,Math.PI*2); ctx.fill();
+  // wing
+  const wingFlap = !onGround ? Math.sin(time*0.08)*10 : Math.sin(time*0.02)*2;
+  ctx.save(); ctx.rotate(wingFlap*0.06);
+  ctx.fillStyle='#E8F0FF'; ctx.strokeStyle='#0B2E3A'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.ellipse(-6, 2, 13,7, -0.2,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  // wing detail
+  ctx.strokeStyle='rgba(11,46,58,0.18)'; ctx.lineWidth=1.2;
+  for(let i=0;i<3;i++){ ctx.beginPath(); ctx.moveTo(-12+i*5, -1); ctx.lineTo(-10+i*5,4); ctx.stroke(); }
+  ctx.restore();
+  // head
+  ctx.fillStyle='white'; ctx.strokeStyle='#0B2E3A'; ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.arc(14, -6, 11,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  // beak
+  ctx.fillStyle='#FFD93D'; ctx.strokeStyle='#0B2E3A'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(22,-4); ctx.lineTo(38,-2); ctx.lineTo(22,4); ctx.closePath(); ctx.fill(); ctx.stroke();
+  // beak pouch
+  ctx.fillStyle='#FF6B4A'; ctx.beginPath(); ctx.moveTo(22,4); ctx.quadraticCurveTo(28,10,18,8); ctx.fill(); ctx.stroke();
+  // eye
+  ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(16,-8,4,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#0B2E3A'; ctx.beginPath(); ctx.arc(17,-8,2.2,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(17.8,-9,0.9,0,Math.PI*2); ctx.fill();
+  // hat
+  ctx.fillStyle='#0B2E3A'; ctx.beginPath(); ctx.roundRect(8,-18,14,5,2); ctx.fill();
+  ctx.fillStyle='#FFD93D'; ctx.beginPath(); ctx.arc(15,-16,2,0,Math.PI*2); ctx.fill();
+
+  // feet on pedals if not ducking
+  if(!duck){
+    ctx.fillStyle='#FF6B4A'; ctx.strokeStyle='#0B2E3A'; ctx.lineWidth=1.5;
+    const f1x =  -2 + Math.cos(pedalAng)*2; // approximate
+    ctx.beginPath(); ctx.ellipse(f1x, 16, 3,2,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  }
+  ctx.restore();
+
+  // handle hands
+  ctx.fillStyle='#0B2E3A';
+  ctx.beginPath(); ctx.arc(66, 10, 3,0,Math.PI*2); ctx.fill();
+
+  // duck overlay visual
+  if(duck){
+    ctx.fillStyle='rgba(135,216,240,0.0)';
+  }
+
+  ctx.restore();
+}
+
+function loop(ts){
+  requestAnimationFrame(loop);
+  const dt = Math.min(32, ts - lastTime);
+  lastTime = ts;
+  if(!lastTime) return;
+  update(dt);
+  draw();
+}
+requestAnimationFrame(loop);
+
+// initial draw
+draw();
+// handle visibility change to pause
+document.addEventListener('visibilitychange', ()=>{
+  if(document.hidden && state===STATE.PLAY) pauseGame();
+});
+
+// prevent scrolling on touch move over game
+gameWrap.addEventListener('touchmove', e=> e.preventDefault(), {passive:false});
+
+// keyboard gamepad polling (simple)
+let gpInterval;
+setInterval(()=>{
+  const pads = navigator.getGamepads && navigator.getGamepads();
+  if(!pads) return;
+  const p=pads[0];
+  if(!p) return;
+  if(p.buttons[0]?.pressed) doJump();
+  if(p.buttons[1]?.pressed) doDuck(true); else if(!duckTouch) doDuck(false);
+}, 50);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "kind": "static",
+  "entry": "index.html",
+  "notes": "单文件 HTML 游戏，外部仅 CDN 字体与图标，直接托管即可"
+}

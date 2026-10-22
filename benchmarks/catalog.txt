@@ -29,5 +29,10 @@ grok/4-6             grok-cli
 seed/2-1-lite        doubao-work
 seed/2-1-pro         doubao-work
 seed/2-1-turbo       doubao-work
+kimi/k-3-1           arena-ai
+anthropic/fable-5-1  arena-ai
 anthropic/opus-5-5   claude-code, doubao-work, dsh
-anthropic/haiku-5-5   claude-code, opencode
+anthropic/sonnet-5-5 arena-ai
+anthropic/haiku-5-5  claude-code, opencode
+google/gemini-4-argon arena-ai
+google/gemini-3-8-flash arena-ai

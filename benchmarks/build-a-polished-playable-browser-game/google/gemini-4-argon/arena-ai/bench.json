@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "kind": "process",
+  "setup": [
+    {
+      "run": "npm ci --registry=https://registry.npmjs.org/",
+      "unless": "node_modules"
+    },
+    { "run": "npm run build", "unless": "dist/index.html" }
+  ],
+  "start": "node_modules/.bin/vite preview --host 127.0.0.1 --port {port} --strictPort",
+  "ports": { "app": "auto" },
+  "url": "http://127.0.0.1:{port}/",
+  "readyTimeoutSec": 90,
+  "notes": "React + Vite + Tailwind，vite-plugin-singlefile 打成单文件 dist/index.html，用 vite preview 单端口托管"
+}
