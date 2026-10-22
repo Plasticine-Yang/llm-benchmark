@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f7f5eb">
+  <meta name="description" content="One pelican. Two wheels. An endless summer. Hop, glide, and collect fish in a sunny little coastal arcade game.">
+  <title>Pelican Pedal Club — A little coastal escape</title>
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M4 12h15m-6-6 6 6-6 6"/></symbol>
+    <symbol id="icon-sound" viewBox="0 0 24 24"><path d="m11 5-5 4H3v6h3l5 4Zm4 3a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></symbol>
+    <symbol id="icon-mute" viewBox="0 0 24 24"><path d="m11 5-5 4H3v6h3l5 4Zm5 4 6 6m0-6-6 6"/></symbol>
+    <symbol id="icon-trophy" viewBox="0 0 24 24"><path d="M7 3h10v6a5 5 0 0 1-10 0Zm0 2H3v3a4 4 0 0 0 5 4m9-7h4v3a4 4 0 0 1-5 4m-4 2v6m-4 1h8"/></symbol>
+    <symbol id="icon-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-1 .5-1 1.2-1 2.2M12 17h.01"/></symbol>
+    <symbol id="icon-fish" viewBox="0 0 32 24"><path d="M22 12C14 1 5 4 2 12c3 8 12 11 20 0Zm0 0 8-7v14Z"/><circle cx="9" cy="11" r="1.1" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="icon-bike" viewBox="0 0 36 28"><circle cx="8" cy="20" r="6"/><circle cx="28" cy="20" r="6"/><path d="m8 20 7-14 7 14H8l12-10h5l3 10M12 6h7m3-4h4l-2 8"/></symbol>
+    <symbol id="icon-hop" viewBox="0 0 36 28"><path d="M4 23h28M10 18C8 1 28 1 26 18m-5-5 5 5 5-5"/></symbol>
+    <symbol id="icon-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14" stroke-width="4"/></symbol>
+    <symbol id="icon-play" viewBox="0 0 24 24"><path d="m8 4 12 8-12 8Z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="icon-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+    <symbol id="icon-restart" viewBox="0 0 24 24"><path d="M4 10a8 8 0 1 1 1 7M4 4v6h6"/></symbol>
+    <symbol id="icon-bolt" viewBox="0 0 24 24"><path d="m13 2-9 12h7l-1 8 10-13h-8Z"/></symbol>
+    <symbol id="icon-heart" viewBox="0 0 24 24"><path d="M12 21 3 12C-3 5 7-2 12 5c5-7 15 0 9 7Z" fill="currentColor" stroke="none"/></symbol>
+  </svg>
+
+  <div class="site-shell">
+    <header class="site-header">
+      <button class="brand" id="home-button" aria-label="Pelican Pedal Club, back to start">
+        <svg class="brand-mark" viewBox="0 0 56 56" aria-hidden="true"><path d="M13 48V23c0-16 23-18 25-3l-3 16-8 5v7" fill="#274c3d"/><path d="M20 48V24c0-9 13-10 14-1v11l-7 7v7" fill="#f7f5eb"/><path d="m32 24 23 6-23 7Z" fill="#ed7958"/><circle cx="29" cy="21" r="1.8" fill="#274c3d"/><path d="M9 18q11-13 30-4" fill="none" stroke="#274c3d" stroke-width="6" stroke-linecap="round"/><path d="M8 49h27" stroke="#274c3d" stroke-width="3" stroke-linecap="round"/></svg>
+        <span class="brand-type">pelican<span>P E D A L &nbsp; C L U B</span></span>
+      </button>
+      <div class="header-center"><span class="tiny-sun">✳</span> A LITTLE COASTAL ESCAPE</div>
+      <nav class="header-actions" aria-label="Game options">
+        <button class="text-button" id="help-button" aria-label="How to play"><svg class="icon"><use href="#icon-help"/></svg><span>How to play</span></button>
+        <button class="text-button" id="leaderboard-button" aria-label="Leaderboard"><svg class="icon"><use href="#icon-trophy"/></svg><span>Leaderboard</span></button>
+        <span class="nav-divider"></span>
+        <button class="icon-button sound-button" id="sound-button" aria-label="Mute sound" title="Mute sound (M)" aria-pressed="false"><svg class="icon"><use href="#icon-sound"/></svg></button>
+      </nav>
+    </header>
+
+    <main>
+      <section class="game-stage" id="game-stage" aria-label="Pelican Pedal Club game">
+        <canvas id="game-canvas" role="img" aria-label="A pelican cycles along a sunny coast. Press Space to jump, again to flap, and hold Shift to boost."></canvas>
+        <div class="scene-grain" aria-hidden="true"></div>
+
+        <div class="start-screen" id="start-screen">
+          <div class="start-copy">
+            <div class="eyebrow"><span></span> LESS HURRY. MORE HAPPY.</div>
+            <h1>Good days.<br>Great <em>rides.</em></h1>
+            <p>One pelican. Two wheels. An endless summer.<br>Catch a little air. Catch a lot of fish.</p>
+            <button class="primary-button start-button" id="start-button">Let’s ride <svg class="icon"><use href="#icon-arrow"/></svg></button>
+            <div class="keyboard-hint">or press <kbd>SPACE</kbd> to roll</div>
+          </div>
+          <div class="hero-note" aria-hidden="true">Nice day<br>for a little spin.<svg viewBox="0 0 70 50"><path d="M7 6c42-9 61 8 39 35m-5-14 5 14 15-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+          <div class="sun-stamp" aria-hidden="true"><span>100%<br><strong>GOOD<br>TIMES</strong><small>✦ &nbsp; ✦ &nbsp; ✦</small></span></div>
+          <div class="start-bottom"><span class="coast-label"><span class="live-dot"></span> WELCOME TO PELICAN BAY</span><button class="personal-best" id="personal-best"><svg class="icon"><use href="#icon-trophy"/></svg> BEST RIDE <strong id="menu-best">—</strong></button></div>
+        </div>
+
+        <div class="game-hud" id="game-hud" hidden>
+          <div class="score-card"><span class="stat-label">THIS RIDE</span><div class="score-value" id="score">00000</div><span class="combo-label" id="combo-label">LET THE GOOD TIMES ROLL</span></div>
+          <div class="coast-progress"><span>PELICAN BAY</span><div><i></i><span id="distance">0 m</span><i></i></div></div>
+          <div class="hud-right"><div class="ride-vitals"><div class="hearts" id="hearts" aria-label="3 lives remaining"><svg class="icon"><use href="#icon-heart"/></svg><svg class="icon"><use href="#icon-heart"/></svg><svg class="icon"><use href="#icon-heart"/></svg></div><div class="fish-count"><svg class="icon"><use href="#icon-fish"/></svg><strong id="fish-count">0</strong></div></div><button class="icon-button pause-button" id="pause-button" aria-label="Pause game" title="Pause (P / Escape)"><svg class="icon"><use href="#icon-pause"/></svg></button></div>
+        </div>
+        <div class="game-toast" id="game-toast" role="status" aria-live="polite"></div>
+        <div class="ride-controls" id="ride-controls" hidden>
+          <div class="boost-meter"><div class="boost-meter-heading"><svg class="icon"><use href="#icon-bolt"/></svg><span>SEA BREEZE</span><kbd>SHIFT</kbd></div><div class="meter-track"><div id="boost-fill"></div></div></div>
+          <div class="desktop-ride-hint"><kbd>SPACE</kbd> HOP <span>·</span> AGAIN TO FLAP</div>
+          <div class="touch-controls"><button id="touch-boost" class="touch-button boost-touch" aria-label="Hold to boost"><svg class="icon"><use href="#icon-bolt"/></svg> BOOST</button><button id="touch-jump" class="touch-button jump-touch" aria-label="Jump, press again to double jump">HOP <svg class="icon"><use href="#icon-hop"/></svg></button></div>
+        </div>
+
+        <div class="state-overlay" id="pause-screen" hidden>
+          <div class="state-card pause-card"><span class="card-eyebrow">A MOMENT IN THE SUN</span><div class="pause-illustration" aria-hidden="true">☀</div><h2>Take a breather.</h2><p>The coast isn’t going anywhere.</p><button class="primary-button" id="resume-button">Keep rolling <svg class="icon"><use href="#icon-play"/></svg></button><button class="secondary-button" id="pause-restart"><svg class="icon"><use href="#icon-restart"/></svg> Start a fresh ride</button><span class="card-key-hint"><kbd>P</kbd> or <kbd>ESC</kbd> to resume</span></div>
+        </div>
+
+        <div class="state-overlay" id="gameover-screen" hidden>
+          <div class="state-card gameover-card"><span class="card-eyebrow" id="gameover-eyebrow">THAT’S ONE FOR THE SCRAPBOOK</span><svg class="finish-trophy icon" aria-hidden="true"><use href="#icon-trophy"/></svg><h2>What a ride.</h2><p>A little tumble. A lot of good times.</p><div class="final-score" id="final-score">0</div><span class="final-score-label">POINTS OF PURE SUNSHINE</span><div class="ride-summary"><span><svg class="icon"><use href="#icon-fish"/></svg><b id="final-fish">0</b> fish</span><span><svg class="icon"><use href="#icon-bike"/></svg><b id="final-distance">0</b> m</span><span><svg class="icon"><use href="#icon-bolt"/></svg><b id="final-combo">×1</b> best</span></div><label class="rider-name">SIGN YOUR RIDE <input id="rider-name" aria-label="Your initials for the local leaderboard" value="YOU" maxlength="3" autocomplete="off" spellcheck="false"></label><button class="primary-button" id="restart-button">One more ride <svg class="icon"><use href="#icon-restart"/></svg></button><div class="gameover-links"><button class="text-button" id="results-leaderboard">See leaderboard <svg class="icon"><use href="#icon-arrow"/></svg></button><button class="text-button" id="back-home">Back to the bay</button></div><span class="card-key-hint"><kbd>SPACE</kbd> or <kbd>R</kbd> to ride again</span></div>
+        </div>
+      </section>
+
+      <section class="ride-guide" aria-label="Quick controls">
+        <article class="guide-item"><div class="guide-icon bike-guide"><svg class="icon"><use href="#icon-bike"/></svg></div><div><h3>Born to cruise.</h3><p>We pedal. You enjoy the ride.</p></div><span class="guide-number">01</span></article>
+        <article class="guide-item"><div class="guide-icon hop-guide"><svg class="icon"><use href="#icon-hop"/></svg></div><div><h3>A little hop goes a long way.</h3><p><span class="keyboard-copy"><kbd>SPACE</kbd> to jump. Again to flap.</span><span class="touch-copy">Tap to hop. Tap again to flap.</span></p></div><span class="guide-number">02</span></article>
+        <article class="guide-item"><div class="guide-icon fish-guide"><svg class="icon"><use href="#icon-fish"/></svg></div><div><h3>Fish for a new best.</h3><p>Grab fish. Build a streak. Go farther.</p></div><span class="guide-number">03</span></article>
+      </section>
+    </main>
+    <footer class="site-footer"><span>A SMALL GAME FOR A GOOD DAY.</span><span class="footer-waves" aria-hidden="true">∿∿∿</span><span>NO FINISH LINE. JUST GOOD VIBES. <span class="footer-star">✳</span></span></footer>
+  </div>
+
+  <dialog id="help-dialog" class="paper-dialog" aria-labelledby="help-title"><button class="dialog-close icon-button" data-close="help-dialog" aria-label="Close instructions"><svg class="icon"><use href="#icon-close"/></svg></button><div class="card-eyebrow">YOUR TICKET TO A GOOD TIME</div><h2 id="help-title">Easy does it.</h2><p class="dialog-intro">You bring the wings. We’ll bring the wheels.</p><div class="instruction-row"><span class="instruction-number">01</span><div><h3>Hop. Flap. Nailed it.</h3><p>Press <kbd>SPACE</kbd>, <kbd>↑</kbd> or <kbd>W</kbd> to hop. Press again in the air for a wing-powered double jump. Hold a little longer to float.</p></div></div><div class="instruction-row"><span class="instruction-number">02</span><div><h3>Catch the sea breeze.</h3><p>Hold <kbd>SHIFT</kbd> or <kbd>→</kbd> to boost. Your breeze meter refills as you ride. Fish give it an extra kick.</p></div></div><div class="instruction-row"><span class="instruction-number">03</span><div><h3>Good things come in schools.</h3><p>Fish are worth 25 points. Catch five in a row to grow your multiplier, up to ×4. Miss a fish or take a tumble and the streak resets.</p></div></div><div class="mobile-instructions">On a touch screen? Tap the coast or the HOP button to jump. Hold BOOST to fly along.</div><div class="help-bottom"><span><kbd>P</kbd> Pause &nbsp; <kbd>R</kbd> Restart &nbsp; <kbd>M</kbd> Sound</span><span>♥ ♥ ♥ &nbsp; Three chances to shine.</span></div><button class="primary-button" id="help-done">Got it. Good vibes ahead. <svg class="icon"><use href="#icon-arrow"/></svg></button></dialog>
+
+  <dialog id="leaderboard-dialog" class="paper-dialog" aria-labelledby="leaderboard-title"><button class="dialog-close icon-button" data-close="leaderboard-dialog" aria-label="Close leaderboard"><svg class="icon"><use href="#icon-close"/></svg></button><div class="card-eyebrow">THE PELICAN BAY HONOR ROLL</div><h2 id="leaderboard-title">Local legends.</h2><p class="dialog-intro">Big rides. Little bragging rights.</p><div class="leaderboard-table"><div class="leaderboard-heading"><span>RANK</span><span>RIDER</span><span>DISTANCE</span><span>SCORE</span></div><div id="leaderboard-rows"></div></div><div id="leaderboard-empty" class="leaderboard-empty"><svg class="icon"><use href="#icon-trophy"/></svg><h3>The coast is yours.</h3><p>Your first ride starts the story.<br>Go make yourself a local legend.</p></div><p class="local-note" id="storage-note">Your top 5 rides, saved on this device.</p><button class="primary-button" data-close="leaderboard-dialog">Back to the good stuff <svg class="icon"><use href="#icon-arrow"/></svg></button></dialog>
+  <script type="module" src="./game.js"></script>
+</body>
+</html>
