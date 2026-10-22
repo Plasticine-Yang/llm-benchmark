@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "kind": "process",
+  "start": "node server.mjs --host 127.0.0.1 --port {port}",
+  "url": "http://127.0.0.1:{port}/",
+  "notes": "零依赖 node 静态服务（npm start 同款），托管源码目录；dist/ 为已构建副本，无需 setup"
+}
