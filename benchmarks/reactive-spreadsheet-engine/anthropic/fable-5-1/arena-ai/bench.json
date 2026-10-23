@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "kind": "process",
+  "start": "node server.js",
+  "notes": "零运行时依赖；server 读 PORT，dist 不存在时直接托管源码目录"
+}

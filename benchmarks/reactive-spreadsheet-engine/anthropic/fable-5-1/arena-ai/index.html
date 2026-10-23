@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fleet Control — Multi-Robot Warehouse</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/src/style.css">
+</head>
+<body class="min-h-screen text-slate-200">
+
+<!-- ══════════ HEADER / CONTROL BAR ══════════ -->
+<header class="topbar sticky top-0 z-40 border-b border-slate-700/60 px-4 py-2.5">
+  <div class="max-w-[1600px] mx-auto flex flex-wrap items-center gap-x-5 gap-y-2">
+    <div class="flex items-center gap-3 mr-auto">
+      <div class="brand-badge"><i class="fa-solid fa-warehouse"></i></div>
+      <div>
+        <h1 class="font-display text-xl font-bold leading-none tracking-wide text-amber-300">FLEET<span class="text-slate-300">CONTROL</span></h1>
+        <p class="text-[10px] uppercase tracking-[0.22em] text-slate-400">multi-robot warehouse scheduler</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2 flex-wrap">
+      <button id="btnRun" class="ctl-btn ctl-amber" title="Pause / resume the fixed-step simulation">
+        <i class="fa-solid fa-pause"></i><span>Pause</span>
+      </button>
+      <button id="btnStep" class="ctl-btn" title="Advance exactly one tick (pauses first)">
+        <i class="fa-solid fa-forward-step"></i><span>Step</span>
+      </button>
+      <label class="ctl-btn cursor-pointer" title="Fixed tick interval">
+        <i class="fa-solid fa-gauge-high text-cyan-300"></i>
+        <select id="selSpeed" class="bg-transparent outline-none text-slate-200 text-xs font-semibold cursor-pointer">
+          <option class="bg-slate-800" value="700">0.6×</option>
+          <option class="bg-slate-800" value="450" selected>1×</option>
+          <option class="bg-slate-800" value="250">1.8×</option>
+          <option class="bg-slate-800" value="150">3×</option>
+        </select>
+      </label>
+      <div class="flex items-center gap-1.5 ml-1">
+        <label class="text-[10px] uppercase tracking-wider text-slate-400" for="inpSeed">seed</label>
+        <input id="inpSeed" type="number" value="1337" class="seed-input" title="Deterministic seed — reset reproduces the same run">
+        <button id="btnReset" class="ctl-btn ctl-danger" title="Reset simulation with this seed">
+          <i class="fa-solid fa-rotate-left"></i><span>Reset</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2.5">
+      <div class="stat-chip" title="Authoritative simulation tick"><i class="fa-solid fa-clock text-cyan-300"></i> tick <b id="tickVal" class="font-mono">0</b></div>
+      <div class="stat-chip" title="Monotonic event sequence number"><i class="fa-solid fa-arrow-down-1-9 text-cyan-300"></i> seq <b id="seqVal" class="font-mono">0</b></div>
+      <div id="connBadge" class="conn-badge conn-off"><i class="fa-solid fa-plug-circle-xmark"></i><span>connecting…</span></div>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-[1600px] mx-auto p-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+
+  <!-- ══════════ MAP ══════════ -->
+  <section class="panel min-w-0">
+    <div class="panel-head flex-wrap gap-2">
+      <h2 class="panel-title"><i class="fa-solid fa-map text-amber-300"></i> Warehouse floor</h2>
+      <div class="flex items-center gap-2 ml-auto flex-wrap">
+        <div class="mode-group" role="group" aria-label="Interaction mode">
+          <button id="modeInspect" class="mode-btn active" title="Click a shelf to target a job, click a robot to inspect its route">
+            <i class="fa-solid fa-arrow-pointer"></i> Inspect
+          </button>
+          <button id="modeBlock" class="mode-btn" title="Click any open floor cell to block / unblock it — robots replan instantly">
+            <i class="fa-solid fa-ban"></i> Block cells
+          </button>
+        </div>
+        <span id="blockedCount" class="stat-chip" title="Currently blocked floor cells"><i class="fa-solid fa-road-barrier text-rose-400"></i> <b>0</b> blocked</span>
+      </div>
+    </div>
+    <div class="px-3 pb-1 text-xs text-slate-400" id="selInfo">
+      <i class="fa-solid fa-circle-info text-cyan-300"></i> Click a <b class="text-amber-300">shelf</b> to fill the job form · click a <b class="text-cyan-300">robot</b> to highlight its planned route.
+    </div>
+    <div class="relative p-3">
+      <canvas id="mapCanvas" class="w-full rounded-lg block map-canvas"></canvas>
+      <div id="tooltip" class="map-tooltip hidden"></div>
+    </div>
+    <div class="px-4 pb-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-400">
+      <span><i class="fa-solid fa-square text-amber-600/90"></i> shelf</span>
+      <span><i class="fa-solid fa-square text-cyan-500/90"></i> workstation</span>
+      <span><i class="fa-solid fa-square text-slate-600"></i> wall / bottleneck</span>
+      <span><i class="fa-solid fa-square-xmark text-rose-500"></i> blocked cell</span>
+      <span><i class="fa-solid fa-circle-dot text-emerald-400"></i> robot dock</span>
+      <span><i class="fa-solid fa-route text-slate-300"></i> planned path (time-reserved)</span>
+      <span><i class="fa-solid fa-triangle-exclamation text-amber-300"></i> waiting robot — hover for reason</span>
+    </div>
+  </section>
+
+  <!-- ══════════ RIGHT COLUMN ══════════ -->
+  <div class="grid gap-4 content-start min-w-0">
+
+    <!-- new job -->
+    <section class="panel">
+      <div class="panel-head"><h2 class="panel-title"><i class="fa-solid fa-dolly text-amber-300"></i> New transport job</h2></div>
+      <div class="p-4 grid gap-3">
+        <div>
+          <label class="field-label" for="shelfSelect"><i class="fa-solid fa-boxes-stacked"></i> Source shelf <span class="text-slate-500 normal-case">(or click one on the map)</span></label>
+          <select id="shelfSelect" class="field-input"></select>
+        </div>
+        <div>
+          <span class="field-label"><i class="fa-solid fa-industry"></i> Destination workstation</span>
+          <div id="stationBtns" class="grid grid-cols-4 gap-2">
+            <button data-st="1" class="station-btn">W1</button>
+            <button data-st="2" class="station-btn">W2</button>
+            <button data-st="3" class="station-btn">W3</button>
+            <button data-st="4" class="station-btn">W4</button>
+          </div>
+        </div>
+        <div>
+          <label class="field-label" for="prioSelect"><i class="fa-solid fa-flag"></i> Priority <span class="text-slate-500 normal-case">(aging prevents starvation)</span></label>
+          <select id="prioSelect" class="field-input">
+            <option value="low">▽ Low</option>
+            <option value="normal" selected>◆ Normal</option>
+            <option value="high">▲ High</option>
+            <option value="urgent">⚠ Urgent</option>
+          </select>
+        </div>
+        <button id="btnCreate" class="create-btn" disabled>
+          <i class="fa-solid fa-plus"></i> Dispatch job
+        </button>
+        <p id="jobFormHint" class="text-[11px] text-slate-500 -mt-1">Select a shelf and a workstation.</p>
+      </div>
+    </section>
+
+    <!-- job queue -->
+    <section class="panel">
+      <div class="panel-head">
+        <h2 class="panel-title"><i class="fa-solid fa-list-check text-amber-300"></i> Job queue</h2>
+        <span id="jobCounts" class="text-[11px] text-slate-400 ml-auto font-mono"></span>
+      </div>
+      <div id="jobList" class="scroll-y max-h-[300px] p-2 grid gap-1.5">
+        <p class="empty-note">No jobs yet — dispatch one above.</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- ══════════ ROBOTS ══════════ -->
+  <section class="panel min-w-0">
+    <div class="panel-head">
+      <h2 class="panel-title"><i class="fa-solid fa-robot text-amber-300"></i> Robot fleet</h2>
+      <span class="text-[11px] text-slate-400 ml-auto">click a row to trace its route</span>
+    </div>
+    <div class="scroll-y max-h-[320px]">
+      <table class="w-full text-xs">
+        <thead class="robot-thead">
+          <tr>
+            <th class="text-left">unit</th><th class="text-left">state</th><th class="text-left">job</th>
+            <th class="text-left">status / wait reason</th><th class="text-right">done</th>
+          </tr>
+        </thead>
+        <tbody id="robotList"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══════════ EVENT LOG ══════════ -->
+  <section class="panel min-w-0">
+    <div class="panel-head">
+      <h2 class="panel-title"><i class="fa-solid fa-terminal text-amber-300"></i> Event log</h2>
+      <span class="text-[11px] text-slate-400 ml-auto font-mono" id="logCount"></span>
+    </div>
+    <div id="eventLog" class="scroll-y max-h-[320px] p-2 font-mono text-[11px] leading-relaxed"></div>
+  </section>
+</main>
+
+<div id="toast" class="toast hidden"></div>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

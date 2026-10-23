@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "kind": "process",
+  "setup": [
+    { "run": "npm ci", "unless": "node_modules" },
+    { "run": "npm run build", "unless": "dist/index.html" }
+  ],
+  "start": "node_modules/.bin/vite preview --host 127.0.0.1 --port {port} --strictPort",
+  "notes": "纯前端 Vite + React + three.js（vite-plugin-singlefile），无后端；build 产物为单文件 dist/index.html"
+}

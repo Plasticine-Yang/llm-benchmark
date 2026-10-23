@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>雨夜コンビニ — Rainy Konbini Diorama</title>
+<style>
+  html,body{margin:0;padding:0;overflow:hidden;width:100%;height:100%;background:#061019;}
+  canvas{display:block;width:100%;height:100%;}
+  /* 完全无UI，按需求隐藏一切界面 */
+  *::-webkit-scrollbar{display:none}
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ----- 场景基础 -----
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a1420);
+scene.fog = new THREE.FogExp2(0x0e1e30, 0.012);
+
+const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:false });
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+
+const camera = new THREE.PerspectiveCamera(42, innerWidth/innerHeight, 0.1, 500);
+camera.position.set(52, 48, 52);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.055;
+controls.minDistance = 18;
+controls.maxDistance = 120;
+controls.maxPolarAngle = Math.PI/2.05;
+controls.target.set(0, 6, 0);
+controls.autoRotate = false;
+controls.rotateSpeed = 0.7;
+controls.zoomSpeed = 1.15;
+
+addEventListener('resize', ()=>{
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+// ----- Toon 渐变贴图 -----
+function makeToonGradient(steps=4){
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 1;
+  const g = c.getContext('2d');
+  const grad = g.createLinearGradient(0,0,256,0);
+  grad.addColorStop(0, '#2a2a2a');
+  grad.addColorStop(0.32, '#6a6a6a');
+  grad.addColorStop(0.58, '#b0b0b0');
+  grad.addColorStop(1, '#ffffff');
+  g.fillStyle = grad; g.fillRect(0,0,256,1);
+  const tex = new THREE.CanvasTexture(c);
+  tex.minFilter = THREE.NearestFilter;
+  tex.magFilter = THREE.NearestFilter;
+  tex.colorSpace = THREE.NoColorSpace;
+  return tex;
+}
+const toonGrad = makeToonGradient();
+
+// 轮廓线辅助
+function addOutline(mesh, color=0x0a0f18, threshold=12){
+  const edges = new THREE.EdgesGeometry(mesh.geometry, threshold);
+  const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({color, transparent:true, opacity:0.95}));
+  mesh.add(line);
+  return line;
+}
+function toonMat(color, opts={}){
+  return new THREE.MeshToonMaterial({ color, gradientMap: toonGrad, ...opts });
+}
+
+// ----- 灯光 -----
+scene.add(new THREE.HemisphereLight(0x8ec6ff, 0x0a1928, 0.9));
+const moon = new THREE.DirectionalLight(0xcfe8ff, 1.0);
+moon.position.set(-40, 60, -30);
+moon.castShadow = true;
+moon.shadow.mapSize.set(2048,2048);
+moon.shadow.camera.near = 1; moon.shadow.camera.far = 180;
+moon.shadow.camera.left=-60; moon.shadow.camera.right=60; moon.shadow.camera.top=60; moon.shadow.camera.bottom=-60;
+moon.shadow.bias = -0.0005;
+scene.add(moon);
+
+// 室内暖光
+const warmLight1 = new THREE.PointLight(0xffe9a8, 80, 40, 1.8);
+warmLight1.position.set(0, 10, 0);
+scene.add(warmLight1);
+const warmLight2 = new THREE.PointLight(0xffb86c, 50, 30, 2);
+warmLight2.position.set(-6, 9, 2);
+scene.add(warmLight2);
+// 招牌冷霓虹
+const neonLight = new THREE.PointLight(0x3ad4ff, 60, 30, 2);
+neonLight.position.set(0, 16, 10);
+scene.add(neonLight);
+// 路灯光
+const lampLight1 = new THREE.PointLight(0xffd99a, 70, 35, 1.7);
+lampLight1.position.set(32, 18, 26);
+lampLight1.castShadow = true;
+lampLight1.shadow.mapSize.set(512,512);
+scene.add(lampLight1);
+const lampLight2 = new THREE.PointLight(0xffd99a, 45, 25, 1.8);
+lampLight2.position.set(-30, 16, -22);
+scene.add(lampLight2);
+
+// ----- 底座 -----
+const baseGroup = new THREE.Group();
+scene.add(baseGroup);
+
+// 完整正方形底座 (紧凑构图)
+const baseSize = 78;
+const baseThick = 4.5;
+const baseGeo = new THREE.BoxGeometry(baseSize, baseThick, baseSize);
+const baseMat = toonMat(0x122a3d);
+const baseMesh = new THREE.Mesh(baseGeo, baseMat);
+baseMesh.position.y = -baseThick/2;
+baseMesh.receiveShadow = true;
+baseGroup.add(baseMesh);
+addOutline(baseMesh);
+
+// 底座侧面装饰线条
+const baseSideMat = new THREE.MeshToonMaterial({color:0x0b1b2d, gradientMap:toonGrad});
+const rim = new THREE.Mesh(new THREE.BoxGeometry(baseSize+1.5, 1.2, baseSize+1.5), baseSideMat);
+rim.position.y = -0.2;
+baseGroup.add(rim);
+
+// 人行道 / 沥青分区
+const sidewalk = new THREE.Mesh(new THREE.BoxGeometry(baseSize-0.6, 0.4, baseSize-0.6), toonMat(0x1e344c));
+sidewalk.position.y = 0.18;
+sidewalk.receiveShadow = true;
+baseGroup.add(sidewalk);
+
+// 道路 - L型转角 (日式街角)
+const roadMat = toonMat(0x1a2736);
+const roadShape = new THREE.Shape();
+roadShape.moveTo(-baseSize/2+0.4, -baseSize/2+0.4);
+roadShape.lineTo(baseSize/2-0.4, -baseSize/2+0.4);
+roadShape.lineTo(baseSize/2-0.4, 18);
+roadShape.lineTo(18, 18);
+roadShape.lineTo(18, baseSize/2-0.4);
+roadShape.lineTo(-baseSize/2+0.4, baseSize/2-0.4);
+roadShape.lineTo(-baseSize/2+0.4, -baseSize/2+0.4);
+const roadGeo = new THREE.ShapeGeometry(roadShape, 1);
+const road = new THREE.Mesh(roadGeo, roadMat);
+road.rotation.x = -Math.PI/2;
+road.position.y = 0.42;
+road.receiveShadow = true;
+baseGroup.add(road);
+// 斑马线反光
+const zebraMat = new THREE.MeshStandardMaterial({color:0xe8eef5, roughness:0.25, metalness:0.1, emissive:0xffffff, emissiveIntensity:0.06});
+for(let i=0;i<5;i++){
+  const z = new THREE.Mesh(new THREE.PlaneGeometry(8,1.4), zebraMat);
+  z.rotation.x=-Math.PI/2; z.rotation.z=0;
+  z.position.set(6+i*3.2 -4, 0.43, 26.5);
+  baseGroup.add(z);
+}
+for(let i=0;i<4;i++){
+  const z = new THREE.Mesh(new THREE.PlaneGeometry(1.4,8), zebraMat);
+  z.rotation.x=-Math.PI/2;
+  z.position.set(-27.5,0.43, -6+i*3.2);
+  baseGroup.add(z);
+}
+// 停车位线
+const lineMat = new THREE.LineBasicMaterial({color:0xd6e1ee, transparent:true, opacity:0.9});
+function parkingLine(p1,p2){
+  const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...p1), new THREE.Vector3(...p2)]);
+  const l = new THREE.Line(g, lineMat);
+  l.position.y = 0.44;
+  baseGroup.add(l);
+}
+parkingLine([-20, -baseSize/2+6], [-20, -baseSize/2+14]);
+parkingLine([-12, -baseSize/2+6], [-12, -baseSize/2+14]);
+parkingLine([-20, -baseSize/2+14], [-12, -baseSize/2+14]);
+parkingLine([-20, -baseSize/2+6], [-12, -baseSize/2+6]);
+
+// 排水沟
+const gutter = new THREE.Mesh(new THREE.BoxGeometry(baseSize-2, 0.2, 0.9), toonMat(0x0f2335));
+gutter.position.set(0,0.45, -baseSize/2+1.6);
+baseGroup.add(gutter);
+
+// ----- 便利店主体 -----
+const storeGroup = new THREE.Group();
+scene.add(storeGroup);
+
+const sW=30, sD=26, sH=16;
+const storeMatWall = toonMat(0xf5f0e6);
+const storeBox = new THREE.Mesh(new THREE.BoxGeometry(sW, sH, sD), storeMatWall);
+storeBox.position.set(0, sH/2+0.4, 0);
+storeBox.castShadow = true; storeBox.receiveShadow = true;
+storeGroup.add(storeBox);
+addOutline(storeBox, 0x0a1020, 18);
+
+// 屋顶 / 雨棚
+const roof = new THREE.Mesh(new THREE.BoxGeometry(sW+3, 1.2, sD+3), toonMat(0x263a4e));
+roof.position.set(0, sH+1.0, 0);
+roof.castShadow = true;
+storeGroup.add(roof);
+addOutline(roof);
+// 前屋檐雨棚延伸
+const canopy = new THREE.Mesh(new THREE.BoxGeometry(sW+2, 0.6, 5.2), toonMat(0xe9e2cf));
+canopy.position.set(0, 11.2, sD/2+2.0);
+canopy.castShadow = true;
+storeGroup.add(canopy);
+addOutline(canopy);
+ // 支撑柱
+for(let x of [-12,12]){
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.28,0.28,11,10), toonMat(0xdde3ea));
+  pole.position.set(x, 6, sD/2+3.8);
+  pole.castShadow=true;
+  storeGroup.add(pole);
+}
+
+// 玻璃橱窗 - 大面积
+function makeGlass(w,h, x,y,z, rotY=0){
+  const g = new THREE.Mesh(new THREE.PlaneGeometry(w,h), new THREE.MeshPhysicalMaterial({
+    color:0xffffff, transparent:true, opacity:0.18, roughness:0.08, metalness:0.05,
+    transmission:0.85, thickness:0.2, envMapIntensity:1.1, side:THREE.DoubleSide
+  }));
+  g.position.set(x,y,z); g.rotation.y = rotY;
+  storeGroup.add(g);
+  // 玻璃窗框
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(w+0.4, h+0.4, 0.15), toonMat(0x1a2a3a));
+  frame.position.set(x,y,z);
+  frame.rotation.y = rotY;
+  // 用线框描边替代实体避免遮挡
+  const frEdges = new THREE.EdgesGeometry(new THREE.PlaneGeometry(w,h));
+  const frLine = new THREE.LineSegments(frEdges, new THREE.LineBasicMaterial({color:0x1e2f42}));
+  frLine.position.set(x,y,z+0.08);
+  frLine.rotation.y = rotY;
+  storeGroup.add(frLine);
+  return g;
+}
+const frontGlassL = makeGlass(11, 10, -8.2, 7.8, sD/2+0.05);
+const frontGlassR = makeGlass(11, 10, 8.2, 7.8, sD/2+0.05);
+const sideGlass1 = makeGlass(9, 9, sW/2+0.05, 7.2, 2, Math.PI/2);
+const sideGlass2 = makeGlass(9, 9, sW/2+0.05, 7.2, -6, Math.PI/2);
+const backGlass = makeGlass(12, 6, 0, 8, -sD/2-0.05, Math.PI);
+
+// 自动门 (偶尔开合)
+const doorGroup = new THREE.Group();
+doorGroup.position.set(0, 6.2, sD/2+0.06);
+storeGroup.add(doorGroup);
+const doorMat = new THREE.MeshPhysicalMaterial({color:0xe8f4ff, transparent:true, opacity:0.22, roughness:0.05, transmission:0.8, side:THREE.DoubleSide});
+const doorL = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 8.2), doorMat);
+doorL.position.x = -1.6;
+doorGroup.add(doorL);
+const doorR = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 8.2), doorMat);
+doorR.position.x = 1.6;
+doorGroup.add(doorR);
+// 门框发光
+const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(7.6,0.3,0.2), toonMat(0x3aa0ff));
+doorFrame.position.set(0,4.6,0.1);
+doorGroup.add(doorFrame);
+const doorSensor = new THREE.Mesh(new THREE.BoxGeometry(3,0.4,0.3), new THREE.MeshStandardMaterial({color:0x1a2a3a, emissive:0x3ad4ff, emissiveIntensity:0.5}));
+doorSensor.position.set(0,4.9,0.2);
+doorGroup.add(doorSensor);
+
+// 招牌
+const signBoard = new THREE.Group();
+signBoard.position.set(0,14.6, sD/2+1.0);
+storeGroup.add(signBoard);
+const signBack = new THREE.Mesh(new THREE.BoxGeometry(20,3.4,1.0), toonMat(0xffffff));
+signBack.castShadow=true;
+signBoard.add(signBack);
+addOutline(signBack);
+const signColors = [0xff3b30, 0x2d8cff, 0xffd23d];
+for(let i=0;i<3;i++){
+  const stripe = new THREE.Mesh(new THREE.BoxGeometry(6.2,2.2,0.25), toonMat(signColors[i]));
+  stripe.position.set(-6.2+i*6.2,0,0.62);
+  signBoard.add(stripe);
+}
+// 片假名风格文字 (用几何体模拟)
+const signText = new THREE.Mesh(new THREE.BoxGeometry(10,0.8,0.2), toonMat(0x0a1830));
+signText.position.set(0,0,0.75);
+signBoard.add(signText);
+// 霓虹灯管
+const neonTube = new THREE.Mesh(new THREE.BoxGeometry(20.6,0.18,0.18), new THREE.MeshStandardMaterial({color:0x7af0ff, emissive:0x2dd4ff, emissiveIntensity:2.2}));
+neonTube.position.set(0,1.95,0.7);
+signBoard.add(neonTube);
+const neonTube2 = neonTube.clone(); neonTube2.position.y=-1.95;
+signBoard.add(neonTube2);
+
+// 侧面小招牌
+const sideSign = new THREE.Mesh(new THREE.BoxGeometry(0.8,6,2), toonMat(0xffffff));
+sideSign.position.set(sW/2+0.9, 10, sD/2-2);
+storeGroup.add(sideSign);
+addOutline(sideSign);
+const sideSignStripe = new THREE.Mesh(new THREE.PlaneGeometry(0.6,4.5), new THREE.MeshStandardMaterial({color:0xff3b30, emissive:0xff3b30, emissiveIntensity:0.6}));
+sideSignStripe.position.set(sW/2+1.32,10,sD/2-2);
+sideSignStripe.rotation.y=Math.PI/2;
+storeGroup.add(sideSignStripe);
+
+// 门口地垫
+const mat = new THREE.Mesh(new THREE.PlaneGeometry(7,3.2), toonMat(0x1a3a5a));
+mat.rotation.x=-Math.PI/2; mat.position.set(0,0.46, sD/2+3.2);
+mat.receiveShadow=true;
+storeGroup.add(mat);
+const matText = new THREE.Mesh(new THREE.PlaneGeometry(4,0.9), new THREE.MeshBasicMaterial({color:0xffffff, transparent:true, opacity:0.85}));
+matText.rotation.x=-Math.PI/2; matText.position.set(0,0.47, sD/2+3.2);
+storeGroup.add(matText);
+
+// ----- 室内陈设 (透过玻璃可见) -----
+const interior = new THREE.Group();
+storeGroup.add(interior);
+
+// 地板
+const floorIn = new THREE.Mesh(new THREE.PlaneGeometry(sW-1, sD-1), new THREE.MeshStandardMaterial({color:0xfff7e6, roughness:0.6}));
+floorIn.rotation.x=-Math.PI/2; floorIn.position.set(0,0.55,0);
+floorIn.receiveShadow=true;
+interior.add(floorIn);
+// 导视箭头
+for(let i=0;i<3;i++){
+  const arrow = new THREE.Mesh(new THREE.PlaneGeometry(1.8,0.5), new THREE.MeshBasicMaterial({color:0xffb84a}));
+  arrow.rotation.x=-Math.PI/2; arrow.position.set(-6+i*6,0.56, 2);
+  interior.add(arrow);
+}
+
+// 货架
+function createShelf(x,z, rot=0){
+  const g = new THREE.Group();
+  g.position.set(x,0.6,z); g.rotation.y=rot;
+  const shelfMat = toonMat(0xf2ebe0);
+  for(let level=0; level<3; level++){
+    const plank = new THREE.Mesh(new THREE.BoxGeometry(7,0.25,2.2), shelfMat);
+    plank.position.set(0, 1.2+level*1.9,0);
+    plank.castShadow=true; plank.receiveShadow=true;
+    g.add(plank); addOutline(plank,0x241d14,30);
+    // 商品 (彩色小盒子)
+    for(let i=0;i<5;i++){
+      const col = [0xff7a7a,0xffd86e,0x7de0ff,0x8aff8a,0xc49aff][i%5];
+      const box = new THREE.Mesh(new THREE.BoxGeometry(0.9,0.7,0.7), toonMat(col));
+      box.position.set(-2.4+i*1.2, 1.7+level*1.9, 0);
+      g.add(box);
+    }
+  }
+  // 侧板
+  const sideA = new THREE.Mesh(new THREE.BoxGeometry(0.2,5.8,2.4), toonMat(0x3a2d1e));
+  sideA.position.set(-3.5,3,0); g.add(sideA);
+  const sideB = sideA.clone(); sideB.position.x=3.5; g.add(sideB);
+  interior.add(g);
+}
+createShelf(-8, 2);
+createShelf(0, 2);
+createShelf(8, -3, Math.PI/2);
+
+// 饮料柜 (靠后墙) 带发光
+const drinkFridge = new THREE.Mesh(new THREE.BoxGeometry(sW-2, 7, 1.2), toonMat(0xcfe9ff));
+drinkFridge.position.set(0,4.2, -sD/2+1.2);
+drinkFridge.castShadow=true;
+interior.add(drinkFridge);
+addOutline(drinkFridge);
+// 玻璃门
+for(let i=0;i<3;i++){
+  const door = new THREE.Mesh(new THREE.PlaneGeometry(7,5.5), new THREE.MeshPhysicalMaterial({color:0xffffff, transparent:true, opacity:0.22, transmission:0.9}));
+  door.position.set(-8+i*8,4.5, -sD/2+1.9);
+  interior.add(door);
+  // 饮料
+  for(let r=0;r<3;r++) for(let c=0;c<6;c++){
+    const col = [0xff5a5a,0x4ade80,0x60a5fa,0xfacc15][(r+c)%4];
+    const bot = new THREE.Mesh(new THREE.CylinderGeometry(0.28,0.28,1,8), toonMat(col));
+    bot.position.set(-8+i*8 -2.5 + c*1.0, 2.2+r*1.6, -sD/2+1.6);
+    interior.add(bot);
+  }
+}
+// 内部冷柜灯光
+const fridgeLight = new THREE.PointLight(0xcfe9ff, 22, 14, 2);
+fridgeLight.position.set(0,5, -sD/2+2);
+interior.add(fridgeLight);
+
+// 便当区 / 关东煮
+const odenCounter = new THREE.Mesh(new THREE.BoxGeometry(10,2.2,3), toonMat(0xfff1c7));
+odenCounter.position.set(-6,1.7, 6);
+odenCounter.castShadow=true;
+interior.add(odenCounter);
+addOutline(odenCounter);
+const odenPot1 = new THREE.Mesh(new THREE.CylinderGeometry(1,1,0.8,12), toonMat(0x4a3728));
+odenPot1.position.set(-7.5,2.6,6); interior.add(odenPot1);
+const odenPot2 = odenPot1.clone(); odenPot2.position.x=-4.5; interior.add(odenPot2);
+const steamMat = new THREE.MeshBasicMaterial({color:0xffffff, transparent:true, opacity:0.25});
+for(let i=0;i<2;i++){
+  const steam = new THREE.Mesh(new THREE.PlaneGeometry(1.2,1.5), steamMat);
+  steam.position.set(-7.5+i*3,3.6,6); steam.rotation.y=Math.random();
+  interior.add(steam);
+}
+
+// 收银台
+const register = new THREE.Group();
+register.position.set(5.5,0.6,5.5);
+interior.add(register);
+const regDesk = new THREE.Mesh(new THREE.BoxGeometry(6,1.8,2.2), toonMat(0x4a3a2a));
+regDesk.position.set(0,1.2,0); regDesk.castShadow=true; register.add(regDesk); addOutline(regDesk);
+const regMachine = new THREE.Mesh(new THREE.BoxGeometry(1.2,0.8,1), toonMat(0x1a2a3a));
+regMachine.position.set(0.8,2.25,0); register.add(regMachine);
+const coffeeMac = new THREE.Mesh(new THREE.BoxGeometry(1.4,2.2,1.2), toonMat(0x0b1220));
+coffeeMac.position.set(-1.5,2.3,0); register.add(coffeeMac);
+addOutline(coffeeMac);
+const coffeeGlow = new THREE.Mesh(new THREE.PlaneGeometry(0.8,1.2), new THREE.MeshStandardMaterial({color:0xff9933, emissive:0xff6a00, emissiveIntensity:1.2}));
+coffeeGlow.position.set(-1.5,2.3,0.65); register.add(coffeeGlow);
+// 灯箱
+const lightbox = new THREE.Mesh(new THREE.PlaneGeometry(4,1.2), new THREE.MeshStandardMaterial({color:0xfff4cc, emissive:0xfff0a0, emissiveIntensity:0.9}));
+lightbox.position.set(0,3.8,0.3); register.add(lightbox);
+
+// 杂志架
+const magRack = new THREE.Mesh(new THREE.BoxGeometry(3,3.2,0.8), toonMat(0x4a5a7a));
+magRack.position.set(10,2.2, -2); interior.add(magRack);
+for(let i=0;i<4;i++){
+  const mag = new THREE.Mesh(new THREE.BoxGeometry(0.2,1.8,1.2), toonMat([0xff6b6b,0xffe66d,0x6bf2c2,0x7aa5ff][i]));
+  mag.position.set(10-0.6+i*0.45,2.4,-1.7); interior.add(mag);
+}
+
+// 天花灯
+for(let x=-6;x<=6;x+=6) for(let z=-8;z<=4;z+=6){
+  const cl = new THREE.Mesh(new THREE.PlaneGeometry(2.6,2.6), new THREE.MeshStandardMaterial({color:0xfff8e0, emissive:0xfff0b0, emissiveIntensity:1.0, side:THREE.DoubleSide}));
+  cl.rotation.x=Math.PI/2; cl.position.set(x,12.2,z);
+  interior.add(cl);
+  const gp = new THREE.PointLight(0xfff2b8, 32, 12, 1.6);
+  gp.position.set(x,10.5,z); interior.add(gp);
+}
+
+// 海报
+const poster = new THREE.Mesh(new THREE.PlaneGeometry(3,4), new THREE.MeshBasicMaterial({color:0xffe066}));
+poster.position.set(-sW/2+0.2, 6, 0); poster.rotation.y=Math.PI/2; interior.add(poster);
+const poster2 = poster.clone(); poster2.material = new THREE.MeshBasicMaterial({color:0x7af2ff}); poster2.position.z=5; interior.add(poster2);
+
+// 后场门
+const backDoor = new THREE.Mesh(new THREE.BoxGeometry(2.2,5,0.15), toonMat(0x5a6a7a));
+backDoor.position.set(6,3.5, -sD/2+0.15); interior.add(backDoor);
+
+// ----- 外部小道具 -----
+const props = new THREE.Group();
+scene.add(props);
+
+// 自动贩卖机 x2
+function vendingMachine(x,z, rot=0){
+  const g=new THREE.Group(); g.position.set(x,0.45,z); g.rotation.y=rot;
+  const body = new THREE.Mesh(new THREE.BoxGeometry(3.2,7,2.2), toonMat(0xffffff));
+  body.position.y=3.5; body.castShadow=true; g.add(body); addOutline(body);
+  const front = new THREE.Mesh(new THREE.BoxGeometry(2.8,5.5,0.2), new THREE.MeshStandardMaterial({color:0xff3a3a, emissive:0xff3a3a, emissiveIntensity:0.35}));
+  front.position.set(0,3.8,1.12); g.add(front);
+  // 饮料展示窗灯
+  const glass = new THREE.Mesh(new THREE.PlaneGeometry(2.2,3.5), new THREE.MeshPhysicalMaterial({color:0xffffff, transparent:true, opacity:0.2, transmission:0.9}));
+  glass.position.set(0,4.2,1.25); g.add(glass);
+  for(let r=0;r<3;r++) for(let c=0;c<3;c++){
+    const col=[0xff4d4d,0x4ade80,0x38bdf8][(r+c)%3];
+    const can=new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.22,0.5,8), toonMat(col));
+    can.position.set(-0.6+c*0.6, 3.5+r*0.85,1.05); g.add(can);
+  }
+  // 底部出货口灯
+  const trayLight = new THREE.PointLight(0xff8a8a, 6, 5); trayLight.position.set(0,1,1); g.add(trayLight);
+  const topLight = new THREE.Mesh(new THREE.BoxGeometry(3.0,0.4,0.2), new THREE.MeshStandardMaterial({color:0xffffff, emissive:0xffffff, emissiveIntensity:0.9}));
+  topLight.position.set(0,7.0,0.8); g.add(topLight);
+  props.add(g);
+  return g;
+}
+vendingMachine(19.5, 7, -Math.PI/2);
+vendingMachine(19.5, 11.5, -Math.PI/2);
+
+// 自行车
+function createBike(x,z){
+  const g=new THREE.Group(); g.position.set(x,0.45,z);
+  const wheelGeo=new THREE.TorusGeometry(1.1,0.09,8,16);
+  const wheelMat=toonMat(0x1a1a1a);
+  const w1=new THREE.Mesh(wheelGeo, wheelMat); w1.position.set(-1.4,1.1,0); w1.rotation.y=Math.PI/2; g.add(w1);
+  const w2=w1.clone(); w2.position.x=1.4; g.add(w2);
+  // 车架
+  const frame=new THREE.Mesh(new THREE.BoxGeometry(2.6,0.15,0.18), toonMat(0x7ec8ff));
+  frame.position.set(0,1.5,0); frame.rotation.z=0.2; g.add(frame);
+  const seat=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.18,0.3), toonMat(0x4a3728));
+  seat.position.set(0.6,1.9,0); g.add(seat);
+  const basket=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.5,0.6), toonMat(0xe8e8e8));
+  basket.position.set(1.6,1.4,0); basket.castShadow=true; g.add(basket); addOutline(basket);
+  // 篮子里的雨伞
+  const umb = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,1.5,6), toonMat(0xffd23d));
+  umb.position.set(1.6,1.9,0.1); umb.rotation.z=0.15; g.add(umb);
+  g.scale.set(1.1,1.1,1.1);
+  props.add(g);
+}
+createBike(-16, 10);
+createBike(-17.5, 7.5);
+
+// 雨伞架 (便利店门口)
+const umbrellaStand = new THREE.Group();
+umbrellaStand.position.set(9.5,0.45, sD/2+2.2);
+props.add(umbrellaStand);
+const standBase=new THREE.Mesh(new THREE.BoxGeometry(2.2,0.3,1.2), toonMat(0x3a4a5a));
+standBase.position.y=0.15; umbrellaStand.add(standBase);
+const standFrame=new THREE.Mesh(new THREE.BoxGeometry(2.0,1.8,1.0), new THREE.MeshStandardMaterial({color:0x2a3a4a, transparent:true, opacity:0.35, side:THREE.DoubleSide}));
+standFrame.position.y=1.2; umbrellaStand.add(standFrame); addOutline(standFrame);
+for(let i=0;i<5;i++){
+  const col=[0xffd23d,0x5ad0ff,0xff6b6b,0x8aff8a,0xc49aff][i];
+  const u=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.22,1.4,8), toonMat(col));
+  u.position.set(-0.7+i*0.35,1.1,0); umbrellaStand.add(u);
+  const handle=new THREE.Mesh(new THREE.TorusGeometry(0.12,0.02,6,8,Math.PI), toonMat(0x1a1a1a));
+  handle.position.set(-0.7+i*0.35,0.4,0); handle.rotation.z=Math.PI; umbrellaStand.add(handle);
+}
+
+// 垃圾桶
+for(let i=0;i<2;i++){
+  const bin=new THREE.Mesh(new THREE.CylinderGeometry(0.7,0.75,1.5,12), toonMat(i===0?0x2b7fff:0xff8a2a));
+  bin.position.set(-12+i*2.2,1.2, sD/2+2.0); bin.castShadow=true; props.add(bin); addOutline(bin);
+  const lid=new THREE.Mesh(new THREE.CylinderGeometry(0.78,0.78,0.16,12), toonMat(0x1f2a35));
+  lid.position.set(-12+i*2.2,1.98, sD/2+2.0); props.add(lid);
+}
+
+// 路灯
+function streetLamp(x,z){
+  const g=new THREE.Group(); g.position.set(x,0.45,z);
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.22,10,8), toonMat(0x2a3442));
+  pole.position.y=5; pole.castShadow=true; g.add(pole);
+  const arm=new THREE.Mesh(new THREE.BoxGeometry(1.8,0.2,0.2), toonMat(0x2a3442));
+  arm.position.set(0.6,10,0); g.add(arm);
+  const head=new THREE.Mesh(new THREE.BoxGeometry(1.0,0.6,1.0), toonMat(0xfff1b8));
+  head.position.set(0.9,9.6,0); g.add(head);
+  const bulb=new THREE.Mesh(new THREE.SphereGeometry(0.28,10,8), new THREE.MeshStandardMaterial({color:0xfff1b8, emissive:0xfff1b8, emissiveIntensity:2.5}));
+  bulb.position.set(0.9,9.55,0); g.add(bulb);
+  addOutline(head);
+  props.add(g);
+}
+streetLamp(30, 24);
+streetLamp(-28, -20);
+
+// 电线杆 + 电线
+const utilPole=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.28,16,8), toonMat(0x4a3728));
+utilPole.position.set(30,8, -18); utilPole.castShadow=true; props.add(utilPole);
+const crossArm=new THREE.Mesh(new THREE.BoxGeometry(3,0.25,0.25), toonMat(0x4a3728));
+crossArm.position.set(30,14, -18); props.add(crossArm);
+for(let i=-1;i<=1;i+=2){
+  const insulator=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,0.6,6), toonMat(0xe8e8e8));
+  insulator.position.set(30+i*1.1,14.7,-18); props.add(insulator);
+}
+// 电线 (曲线)
+function addWire(from, to){
+  const curve=new THREE.CatmullRomCurve3([from, new THREE.Vector3((from.x+to.x)/2, (from.y+to.y)/2 -1.2, (from.z+to.z)/2), to]);
+  const geo=new THREE.TubeGeometry(curve, 20, 0.03, 6, false);
+  const mesh=new THREE.Mesh(geo, toonMat(0x1a1a1a));
+  props.add(mesh);
+}
+addWire(new THREE.Vector3(30,14.7,-18), new THREE.Vector3(-28,10,-20));
+addWire(new THREE.Vector3(30,14.7,-18), new THREE.Vector3(30,10,24));
+
+// 路牌
+const roadSignPole=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,4,6), toonMat(0x5a5a5a));
+roadSignPole.position.set(-22,2.4,18); props.add(roadSignPole);
+const roadSign=new THREE.Mesh(new THREE.BoxGeometry(2.2,1.2,0.08), toonMat(0x1a5fb4));
+roadSign.position.set(-22,4.2,18); roadSign.castShadow=true; props.add(roadSign); addOutline(roadSign);
+const roadSignText=new THREE.Mesh(new THREE.PlaneGeometry(1.6,0.5), new THREE.MeshBasicMaterial({color:0xffffff}));
+roadSignText.position.set(-22,4.2,18.06); props.add(roadSignText);
+
+// 护栏 (街角)
+for(let i=0;i<6;i++){
+  const post=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.09,1.4,6), toonMat(0xe8e8e8));
+  post.position.set(-baseSize/2+1.1,1.0, 6+i*2.2); props.add(post);
+  if(i<5){
+    const rail=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.08,2.2), toonMat(0xe8e8e8));
+    rail.position.set(-baseSize/2+1.1,1.2, 7.1+i*2.2); props.add(rail);
+    const rail2=rail.clone(); rail2.position.y=1.0; props.add(rail2);
+  }
+}
+for(let i=0;i<5;i++){
+  const post=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.09,1.4,6), toonMat(0xe8e8e8));
+  post.position.set(-18+i*2.2,1.0, -baseSize/2+1.1); props.add(post);
+}
+
+// 空调外机 + 小巷
+const alleyGroup=new THREE.Group(); alleyGroup.position.set(0,0.45,-sD/2-1.2); props.add(alleyGroup);
+for(let i=0;i<2;i++){
+  const ac=new THREE.Mesh(new THREE.BoxGeometry(2.2,1.6,1.0), toonMat(0xd6dde6));
+  ac.position.set(-6+i*7,2.0, -4+i*0.3); ac.castShadow=true; alleyGroup.add(ac); addOutline(ac);
+  const fan=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.5,0.2,12), toonMat(0x2a3442));
+  fan.position.set(-6+i*7,2.0, -3.45+i*0.3); fan.rotation.x=Math.PI/2; alleyGroup.add(fan);
+  // 管道
+  const pipe=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.12,3,8), toonMat(0x8a9aae));
+  pipe.position.set(-6+i*7,3.2,-4); pipe.rotation.z=Math.PI/2; alleyGroup.add(pipe);
+}
+// 小巷墙
+const alleyWall=new THREE.Mesh(new THREE.BoxGeometry(14,8,0.4), toonMat(0x2a3a4a));
+alleyWall.position.set(0,4.5,-8); alleyGroup.add(alleyWall);
+const alleyDoor=new THREE.Mesh(new THREE.BoxGeometry(1.8,3.2,0.15), toonMat(0x3a2d1e));
+alleyDoor.position.set(3,2.0,-7.75); alleyGroup.add(alleyDoor);
+
+// 公告栏 / 海报栏
+const board=new THREE.Mesh(new THREE.BoxGeometry(3.6,2.6,0.15), toonMat(0x8a5a2a));
+board.position.set(12,2.2,-4); board.castShadow=true; props.add(board); addOutline(board);
+for(let r=0;r<2;r++) for(let c=0;c<3;c++){
+  const pcol=[0xffd86e,0x7de8ff,0xff8a9a,0xaaffa0,0xc4aaff,0xffb86e][r*3+c];
+  const posterMini=new THREE.Mesh(new THREE.PlaneGeometry(0.8,1.0), toonMat(pcol));
+  posterMini.position.set(12-1.1+c*1.1, 2.6-r*1.0, -3.92); props.add(posterMini);
+}
+
+// 交通信号灯 (远处微弱变化)
+const trafficLight=new THREE.Group(); trafficLight.position.set(28,0.45, -28); props.add(trafficLight);
+const tlPole=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.12,8,8), toonMat(0x2a3442));
+tlPole.position.y=4; trafficLight.add(tlPole);
+const tlHead=new THREE.Mesh(new THREE.BoxGeometry(0.6,1.8,0.6), toonMat(0x1a1a1a));
+tlHead.position.y=8.2; trafficLight.add(tlHead);
+const tlRed=new THREE.Mesh(new THREE.SphereGeometry(0.18,8,8), new THREE.MeshStandardMaterial({color:0xff3b30, emissive:0xff3b30, emissiveIntensity:2}));
+tlRed.position.set(0,8.6,0.35); trafficLight.add(tlRed);
+const tlYellow=new THREE.Mesh(new THREE.SphereGeometry(0.18,8,8), new THREE.MeshStandardMaterial({color:0xffd23d, emissive:0xffd23d, emissiveIntensity:0.15}));
+tlYellow.position.set(0,8.2,0.35); trafficLight.add(tlYellow);
+const tlGreen=new THREE.Mesh(new THREE.SphereGeometry(0.18,8,8), new THREE.MeshStandardMaterial({color:0x3dd68c, emissive:0x3dd68c, emissiveIntensity:0.15}));
+tlGreen.position.set(0,7.8,0.35); trafficLight.add(tlGreen);
+
+// ----- 积水反射面 (湿润路面) -----
+const puddleCanvas=document.createElement('canvas'); puddleCanvas.width=512; puddleCanvas.height=512;
+const pudCtx=puddleCanvas.getContext('2d');
+function drawPuddleTexture(t=0){
+  pudCtx.clearRect(0,0,512,512);
+  pudCtx.fillStyle='#0f2438'; pudCtx.fillRect(0,0,512,512);
+  // 反射的光斑
+  for(let i=0;i<6;i++){
+    const x= 80+ i*70 + Math.sin(t*0.0007+i)*20;
+    const y= 200+ Math.cos(t*0.0005+i*1.3)*30;
+    const r= 40+ Math.sin(t*0.0006+i)*8;
+    const g=pudCtx.createRadialGradient(x,y,0,x,y,r*1.8);
+    g.addColorStop(0, `hsla(${35+i*18}, 100%, 62%, 0.32)`);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    pudCtx.fillStyle=g; pudCtx.beginPath(); pudCtx.arc(x,y,r*1.6,0,Math.PI*2); pudCtx.fill();
+  }
+}
+const puddleTex=new THREE.CanvasTexture(puddleCanvas);
+puddleTex.colorSpace=THREE.SRGBColorSpace;
+const puddleMat=new THREE.MeshStandardMaterial({map:puddleTex, roughness:0.08, metalness:0.45, transparent:true, opacity:0.55, emissive:0x1a3a5a, emissiveIntensity:0.12});
+const puddleMesh=new THREE.Mesh(new THREE.PlaneGeometry(38, 34), puddleMat);
+puddleMesh.rotation.x=-Math.PI/2; puddleMesh.position.set(2,0.435, 8);
+puddleMesh.receiveShadow=false;
+baseGroup.add(puddleMesh);
+
+// 额外小水洼
+for(let i=0;i<3;i++){
+  const pw=new THREE.Mesh(new THREE.CircleGeometry(1.2+Math.random()*1.0, 16), new THREE.MeshStandardMaterial({color:0x112233, transparent:true, opacity:0.45, roughness:0.1, metalness:0.3}));
+  pw.rotation.x=-Math.PI/2; pw.position.set( -10+Math.random()*18, 0.44, -8+Math.random()*6);
+  baseGroup.add(pw);
+}
+
+// ----- 雨粒子 -----
+const rainCount=2400;
+const rainGeo=new THREE.BufferGeometry();
+const rainPos=new Float32Array(rainCount*3);
+const rainVel=new Float32Array(rainCount);
+for(let i=0;i<rainCount;i++){
+  rainPos[i*3]= (Math.random()-0.5)*90;
+  rainPos[i*3+1]= Math.random()*55 + 8;
+  rainPos[i*3+2]= (Math.random()-0.5)*90;
+  rainVel[i]= 0.55 + Math.random()*0.65;
+}
+rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos,3));
+const rainMat=new THREE.PointsMaterial({color:0xcfe8ff, size:0.12, transparent:true, opacity:0.75, sizeAttenuation:true});
+const rainPoints=new THREE.Points(rainGeo, rainMat);
+scene.add(rainPoints);
+// 雨线 (拉伸感)
+const rainStreakGeo=new THREE.BufferGeometry();
+const streakPos=new Float32Array(900*3);
+for(let i=0;i<900;i++){ streakPos[i*3]=(Math.random()-0.5)*80; streakPos[i*3+1]=Math.random()*45+5; streakPos[i*3+2]=(Math.random()-0.5)*80; }
+rainStreakGeo.setAttribute('position', new THREE.BufferAttribute(streakPos,3));
+const streakMat=new THREE.PointsMaterial({color:0x9fd8ff, size:0.9, transparent:true, opacity:0.32});
+const streakPoints=new THREE.Points(rainStreakGeo, streakMat);
+scene.add(streakPoints);
+
+// 屋檐滴水粒子
+const dripGeo=new THREE.BufferGeometry();
+const dripPos=new Float32Array(60*3);
+for(let i=0;i<60;i++){ dripPos[i*3]= (Math.random()-0.5)*32; dripPos[i*3+1]= 11; dripPos[i*3+2]= sD/2+4.4 + (Math.random()-0.5)*0.6; }
+dripGeo.setAttribute('position', new THREE.BufferAttribute(dripPos,3));
+const dripMat=new THREE.PointsMaterial({color:0x8ec6ff, size:0.18, transparent:true, opacity:0.9});
+const drips=new THREE.Points(dripGeo, dripMat);
+scene.add(drips);
+
+// 玻璃雨痕纹理 (动态)
+const glassRainCanvas=document.createElement('canvas'); glassRainCanvas.width=256; glassRainCanvas.height=512;
+const glassCtx=glassRainCanvas.getContext('2d');
+const glassRainTex=new THREE.CanvasTexture(glassRainCanvas);
+glassRainTex.colorSpace=THREE.NoColorSpace;
+function updateGlassRain(t){
+  glassCtx.clearRect(0,0,256,512);
+  glassCtx.strokeStyle='rgba(180,210,255,0.35)'; glassCtx.lineWidth=1.2; glassCtx.lineCap='round';
+  for(let i=0;i<22;i++){
+    const x= (i*23 + t*0.06)%256;
+    const y0= (i*47 + t*0.12)%512;
+    glassCtx.beginPath(); glassCtx.moveTo(x, y0);
+    // 蜿蜒雨痕
+    glassCtx.bezierCurveTo(x+2, y0+18, x-1, y0+36, x+1, y0+56);
+    glassCtx.stroke();
+    // 水滴头
+    glassCtx.fillStyle='rgba(200,220,255,0.55)';
+    glassCtx.beginPath(); glassCtx.arc(x+1, y0+56, 1.6,0,Math.PI*2); glassCtx.fill();
+  }
+  glassRainTex.needsUpdate=true;
+}
+const glassOverlayMat=new THREE.MeshBasicMaterial({map:glassRainTex, transparent:true, opacity:0.42, side:THREE.DoubleSide, depthWrite:false});
+const glassRainMesh1=new THREE.Mesh(new THREE.PlaneGeometry(11,10), glassOverlayMat);
+glassRainMesh1.position.set(-8.2,7.8,sD/2+0.12); scene.add(glassRainMesh1);
+const glassRainMesh2=glassRainMesh1.clone(); glassRainMesh2.position.set(8.2,7.8,sD/2+0.12); scene.add(glassRainMesh2);
+
+// ----- 动画循环 -----
+let t=0;
+function animate(){
+  requestAnimationFrame(animate);
+  t+=16.6;
+  controls.update();
+
+  // 雨下落
+  const pAttr=rainGeo.attributes.position;
+  for(let i=0;i<rainCount;i++){
+    let y=pAttr.array[i*3+1];
+    y -= rainVel[i]*1.0;
+    if(y<0.5){ y= 48+Math.random()*8; pAttr.array[i*3]= (Math.random()-0.5)*90; pAttr.array[i*3+2]= (Math.random()-0.5)*90; }
+    pAttr.array[i*3+1]=y;
+    // 微风偏移
+    pAttr.array[i*3] += Math.sin(t*0.0004 + i*0.1)*0.01;
+  }
+  pAttr.needsUpdate=true;
+  const sAttr=rainStreakGeo.attributes.position;
+  for(let i=0;i<900;i++){
+    sAttr.array[i*3+1] -= 0.9;
+    if(sAttr.array[i*3+1]<0.5){ sAttr.array[i*3+1]=46; }
+  }
+  sAttr.needsUpdate=true;
+
+  // 滴水
+  const dAttr=dripGeo.attributes.position;
+  for(let i=0;i<60;i++){
+    let y=dAttr.array[i*3+1];
+    y -= 0.45 + Math.random()*0.15;
+    if(y<0.45){ y=11; dAttr.array[i*3]= (Math.random()-0.5)*30; dAttr.array[i*3+2]= sD/2+4.4 + (Math.random()-0.5)*0.8; }
+    dAttr.array[i*3+1]=y;
+  }
+  dAttr.needsUpdate=true;
+
+  // 自动门开合 (每 3-5秒)
+  const doorCycle = (Math.sin(t*0.0006) + Math.sin(t*0.00031*1.7))*0.5;
+  const openPhase = Math.max(0, Math.sin(t*0.0005 -1.2)); // 0..1
+  const openAmt = openPhase>0.15 ? Math.min(1, (openPhase-0.15)*1.6) : 0;
+  doorL.position.x = -1.6 - openAmt*1.75;
+  doorR.position.x =  1.6 + openAmt*1.75;
+  // 门灯闪烁
+  doorSensor.material.emissiveIntensity = 0.4 + openAmt*0.6;
+
+  // 招牌霓虹轻微闪烁
+  const flicker = 1.8 + Math.sin(t*0.004)*0.2 + (Math.random()<0.015? -0.6:0);
+  neonTube.material.emissiveIntensity = flicker;
+  neonTube2.material.emissiveIntensity = flicker*0.95;
+  signBoard.position.y = 14.6 + Math.sin(t*0.001)*0.04;
+
+  // 交通灯变化
+  const trafficPhase = (t*0.00025)%1;
+  if(trafficPhase<0.45){ tlRed.material.emissiveIntensity=2.0; tlYellow.material.emissiveIntensity=0.08; tlGreen.material.emissiveIntensity=0.08; }
+  else if(trafficPhase<0.55){ tlRed.material.emissiveIntensity=0.08; tlYellow.material.emissiveIntensity=2.0; tlGreen.material.emissiveIntensity=0.08; }
+  else { tlRed.material.emissiveIntensity=0.08; tlYellow.material.emissiveIntensity=0.08; tlGreen.material.emissiveIntensity=2.0; }
+
+  // 积水波纹动画
+  if(t%70<2) drawPuddleTexture(t);
+  puddleTex.needsUpdate=true;
+  puddleMesh.position.y = 0.435 + Math.sin(t*0.0015)*0.02;
+
+  // 玻璃雨痕
+  updateGlassRain(t);
+
+  // 室内灯轻微呼吸
+  warmLight1.intensity = 76 + Math.sin(t*0.0012)*6;
+  lampLight1.intensity = 68 + Math.sin(t*0.0023)*8;
+
+  // 轻微相机浮动 (增强模型感)
+  // 不自动旋转，仅保留用户控制
+
+  renderer.render(scene, camera);
+}
+drawPuddleTexture(0);
+animate();
+
+// 防止右键菜单，保持纯净观看
+renderer.domElement.addEventListener('contextmenu', e=>e.preventDefault());
+</script>
+</body>
+</html>
+

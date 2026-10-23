@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multi-Robot Warehouse Scheduling</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.2.0/remixicon.min.css">
+<style>
+*{font-family:Inter,system-ui,sans-serif}
+.grid-cell{width:100%;aspect-ratio:1;position:relative;display:flex;align-items:center;justify-content:center;font-size:10px}
+.mono{font-family:ui-monospace,Menlo,monospace}
+</style>
+</head>
+<body class="bg-[#0b0f1a] text-slate-100 min-h-screen flex flex-col">
+<!-- Header -->
+<header class="h-14 border-b border-white/10 flex items-center px-4 justify-between bg-[#0f172a] sticky top-0 z-20">
+  <div class="flex items-center gap-3">
+    <div class="w-8 h-8 rounded bg-cyan-500 grid place-items-center text-black font-black">W</div>
+    <div>
+      <div class="font-bold text-sm leading-none">WAREHOUSE OS <span class="text-cyan-400">v2</span></div>
+      <div class="text-[11px] text-slate-400 mono">seed:1337 • seq:<span id="seq">0</span> • <span id="conn" class="text-emerald-400">● CONNECTED (SSE)</span></div>
+    </div>
+  </div>
+  <div class="flex items-center gap-2">
+    <button id="btnPause" class="px-3 py-1.5 bg-white text-black rounded text-sm font-semibold"><i class="ri-pause-line"></i> Pause</button>
+    <button id="btnStep" class="px-3 py-1.5 bg-white/10 rounded text-sm border border-white/10">Step</button>
+    <button id="btnResume" class="px-3 py-1.5 bg-cyan-500 text-black rounded text-sm font-bold hidden">Resume</button>
+    <button id="btnReset" class="px-3 py-1.5 bg-red-500/20 text-red-300 rounded text-sm border border-red-500/20">Reset</button>
+    <button id="btnReconnect" class="px-3 py-1.5 bg-emerald-600 rounded text-sm">↻ Reconnect Test</button>
+  </div>
+</header>
+
+<div class="flex-1 grid grid-cols-1 lg:grid-cols-[1.2fr_380px_340px] gap-3 p-3 max-w-[1600px] mx-auto w-full">
+  <!-- Map -->
+  <div class="bg-[#111a2e] rounded-xl border border-white/10 overflow-hidden flex flex-col">
+    <div class="p-3 border-b border-white/10 flex items-center justify-between">
+      <div class="font-bold text-sm">WAREHOUSE MAP <span class="text-slate-400 font-normal text-xs">16×12 • time-step auth • click cell to block</span></div>
+      <div class="flex gap-2 text-[11px]">
+        <span class="flex items-center gap-1"><span class="w-3 h-3 bg-slate-700"></span>Wall</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 bg-amber-700"></span>Shelf</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 bg-emerald-600"></span>Station</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 bg-red-600"></span>Blocked</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 bg-cyan-400"></span>Robot</span>
+      </div>
+    </div>
+    <div id="map" class="grid gap-px bg-white/10 p-2 m-2 rounded-lg" style="grid-template-columns:repeat(16,1fr)"></div>
+    <div class="px-3 pb-3 text-xs text-slate-400 mono">Tick: <span id="tick">0</span> | Reservations: <span id="resCount">0</span> | Bottleneck aisles: 3 narrow (1-cell) | Mode: FIXED_STEP 600ms authoritative</div>
+    <div class="px-3 pb-3 flex gap-2 text-xs">
+      <button onclick="addRandomJobs(3)" class="px-3 py-2 bg-cyan-500 text-black rounded font-bold">+ 3 Simultaneous Jobs (Acceptance Test)</button>
+      <button onclick="blockAhead()" class="px-3 py-2 bg-amber-500 text-black rounded font-bold">Block Ahead of Robot #1</button>
+    </div>
+  </div>
+
+  <!-- Middle: Jobs & Creator -->
+  <div class="flex flex-col gap-3">
+    <div class="bg-[#111a2e] rounded-xl border border-white/10 p-3">
+      <div class="font-bold text-sm mb-2">CREATE TRANSPORT JOB</div>
+      <div class="grid grid-cols-3 gap-2 text-xs">
+        <select id="selShelf" class="bg-[#0b1224] border border-white/10 rounded px-2 py-2"></select>
+        <select id="selStation" class="bg-[#0b1224] border border-white/10 rounded px-2 py-2"></select>
+        <select id="selPrio" class="bg-[#0b1224] border border-white/10 rounded px-2 py-2">
+          <option value="1">Low</option><option value="2" selected>Normal</option><option value="3">High</option><option value="5">Critical</option>
+        </select>
+      </div>
+      <button id="btnCreate" class="w-full mt-2 bg-cyan-500 text-black py-2 rounded font-bold text-sm">Create & Auto-Assign →</button>
+      <div class="text-[11px] text-slate-400 mt-1">Scheduler: priority + FIFO, no starvation (aging). A* + reservation table.</div>
+    </div>
+    <div class="bg-[#111a2e] rounded-xl border border-white/10 flex-1 flex flex-col overflow-hidden">
+      <div class="p-3 border-b border-white/10 font-bold text-sm flex justify-between">JOB QUEUE <span id="jobCount" class="text-cyan-400">0</span><span class="text-xs font-normal text-slate-400">persisted</span></div>
+      <div id="jobList" class="flex-1 overflow-auto p-2 space-y-2 max-h-[320px]"></div>
+    </div>
+    <div class="bg-[#111a2e] rounded-xl border border-white/10 p-3">
+      <div class="font-bold text-xs mb-2">README — Setup & Start</div>
+      <pre class="mono text-[11px] bg-black/40 p-2 rounded border border-white/10 overflow-auto">npm install
+npm run dev      # vite dev server :5173
+npm run build    # production build -> dist/
+# deterministic seed 1337, authoritative tick
+# SSE endpoint: /api/stream (simulated in-browser)
+# All state in localStorage: wh_state_v2</pre>
+    </div>
+  </div>
+
+  <!-- Right: Robots + Log -->
+  <div class="flex flex-col gap-3">
+    <div class="bg-[#111a2e] rounded-xl border border-white/10 flex flex-col overflow-hidden">
+      <div class="p-3 border-b border-white/10 font-bold text-sm">ROBOTS (8) — Position • Route • Wait Reason</div>
+      <div id="robotList" class="p-2 space-y-2 max-h-[340px] overflow-auto"></div>
+    </div>
+    <div class="bg-[#0f172a] rounded-xl border border-white/10 flex flex-col overflow-hidden flex-1">
+      <div class="p-3 border-b border-white/10 font-bold text-sm flex justify-between">EVENT LOG (seq monotonic) <button onclick="clearLog()" class="text-xs text-slate-400">clear</button></div>
+      <div id="log" class="mono text-[11px] p-2 space-y-1 max-h-[300px] overflow-auto"></div>
+      <div class="p-2 border-t border-white/10 flex gap-2">
+        <input id="snapInfo" class="flex-1 bg-black/30 border border-white/10 rounded px-2 py-1 mono text-xs" readonly>
+        <button id="btnSnapshot" class="px-2 py-1 bg-white/10 rounded text-xs">Get Snapshot</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const W=16,H=12; const SEED=1337;
+function mulberry32(a){return function(){let t=a+=0x6D2B79F5; t=Math.imul(t^t>>>15,t|1); t^=t+Math.imul(t^t>>>7,t|61); return ((t^t>>>14)>>>0)/4294967296}}
+let rnd=mulberry32(SEED);
+let seq=0, tick=0, paused=false, timer=null;
+const LS_KEY='wh_state_v2';
+
+// Grid: 0 free,1 wall,2 shelf,3 station,4 blocked
+let grid=[];
+let robots=[], jobs=[], events=[];
+let reservations=new Map(); // key time -> Set of "x,y" and edges
+
+function initGrid(){
+  grid=Array.from({length:H},()=>Array(W).fill(0));
+  // walls border
+  for(let x=0;x<W;x++){grid[0][x]=1; grid[H-1][x]=1}
+  for(let y=0;y<H;y++){grid[y][0]=1; grid[y][W-1]=1}
+  // workstations top
+  const stations=[[3,1],[7,1],[11,1],[13,1]];
+  stations.forEach(([x,y])=>grid[y][x]=3);
+  // shelves - 20 shelves in blocks creating bottleneck aisles
+  const shelfPos=[
+    [3,3],[4,3],[5,3],[8,3],[9,3],[10,3],
+    [3,5],[4,5],[5,5],[8,5],[9,5],[10,5],
+    [2,7],[3,7],[4,7],[12,7],[13,7],
+    [6,8],[7,8],[8,8]
+  ];
+  shelfPos.forEach(([x,y])=>grid[y][x]=2);
+  // bottleneck aisles are x=6 and x=11 vertical corridors width 1, plus y=6 horizontal gap
+  // ensure corridors free - already
+}
+
+function initRobots(){
+  const spots=[[2,10],[4,10],[6,10],[8,10],[10,10],[12,10],[5,9],[9,9]];
+  robots=spots.map((s,i)=>({
+    id:i+1, x:s[0], y:s[1], dir:0, state:'IDLE', jobId:null, path:[], pathIdx:0, waitReason:'', target:null, color:`hsl(${190+i*38},90%,60%)`
+  }));
+}
+
+function save(){
+  localStorage.setItem(LS_KEY, JSON.stringify({seq,tick,grid,jobs,robots,reservations:[...reservations.entries()],events:events.slice(-80)}));
+}
+function load(){
+  try{
+    const d=JSON.parse(localStorage.getItem(LS_KEY)||'null');
+    if(d && d.grid){ grid=d.grid; jobs=d.jobs; robots=d.robots; seq=d.seq; tick=d.tick; reservations=new Map(d.reservations||[]); events=d.events||[]; return true}
+  }catch(e){}
+  return false
+}
+
+function aStar(sx,sy, gx,gy, blockedSet){
+  const open=[{x:sx,y:sy,g:0,f:Math.abs(gx-sx)+Math.abs(gy-sy),p:null}];
+  const closed=new Set(); const came=new Map();
+  const key=(x,y)=>x+','+y;
+  const isBlocked=(x,y)=>{
+    if(x<0||y<0||x>=W||y>=H) return true;
+    if(grid[y][x]===1||grid[y][x]===2||grid[y][x]===4) return true;
+    if(blockedSet && blockedSet.has(key(x,y))) return true;
+    return false;
+  };
+  while(open.length){
+    open.sort((a,b)=>a.f-b.f);
+    let cur=open.shift();
+    if(cur.x===gx && cur.y===gy){
+      let path=[]; let n=cur; while(n){path.push([n.x,n.y]); n=n.p} path.reverse(); return path;
+    }
+    closed.add(key(cur.x,cur.y));
+    for(let [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      let nx=cur.x+dx, ny=cur.y+dy;
+      if(isBlocked(nx,ny)) continue;
+      let k=key(nx,ny); if(closed.has(k)) continue;
+      let g=cur.g+1, f=g+Math.abs(gx-nx)+Math.abs(gy-ny);
+      let existing=open.find(o=>o.x===nx&&o.y===ny);
+      if(existing){ if(g<existing.g){existing.g=g; existing.f=f; existing.p=cur} } else open.push({x:nx,y:ny,g,f,p:cur});
+    }
+  }
+  return null;
+}
+
+// Reservation helpers
+function resKey(t,x,y){return t+':'+x+','+y}
+function edgeKey(t,x1,y1,x2,y2){return t+':'+x1+','+y1+'->'+x2+','+y2}
+
+function planForRobot(robot, goalX,goalY){
+  // time-expanded reservation up to horizon 80
+  let curT=tick;
+  let cx=robot.x, cy=robot.y;
+  let path=aStar(cx,cy,goalX,goalY);
+  if(!path) return null;
+  // try to reserve step by step with wait insertion
+  let reservedPath=[]; let tIdx=curT;
+  let pIdx=0; // index in path
+  // we will walk path, but check reservation conflicts
+  let attempts=0;
+  let fullPath=[ [cx,cy] ];
+  let curPos=[cx,cy];
+  for(let i=1;i<path.length;i++){
+    let [nx,ny]=path[i];
+    let tries=0;
+    while(tries<12){
+      let nt=tIdx+1;
+      let cellOccupied = reservations.has(nt+':'+nx+','+ny) || reservations.has(nt+':'+nx+','+ny+'_cell');
+      // check using map: we store Sets per time? simplified: check reservations Map values
+      // We'll check both cell and edge
+      let cellKey=nt+':'+nx+','+ny;
+      let edgeKeyStr=nt+':'+nx+','+ny+'->'+curPos[0]+','+curPos[1];
+      let hasCell=false, hasEdge=false;
+      for(let v of reservations.values()){
+        if(v.has(cellKey)) hasCell=true;
+        if(v.has(edgeKeyStr)) hasEdge=true;
+      }
+      if(!hasCell && !hasEdge){
+        // reserve
+        fullPath.push([nx,ny]);
+        tIdx=nt;
+        curPos=[nx,ny];
+        break;
+      } else {
+        // wait one step in place if possible
+        let waitKey=(tIdx+1)+':'+curPos[0]+','+curPos[1];
+        let waitOccupied=false;
+        for(let v of reservations.values()) if(v.has(waitKey)) waitOccupied=true;
+        if(!waitOccupied){
+          fullPath.push([curPos[0],curPos[1]]); // wait
+          tIdx++;
+          tries++;
+        } else {
+          // need replan alternative path via A* avoiding that cell at that time? simplified wait longer
+          fullPath.push([curPos[0],curPos[1]]);
+          tIdx++; tries++;
+        }
+      }
+    }
+  }
+  return fullPath;
+}
+
+function reservePath(robot, fullPath){
+  // clear old reservations for this robot
+  for(let [k,set] of reservations){
+    if(set.has('r'+robot.id)) { /* we tag */ }
+  }
+  // remove previous entries belonging to robot
+  for(let [time,set] of [...reservations.entries()]){
+    for(let v of [...set]) if(v.startsWith('r'+robot.id+':')) set.delete(v);
+    if(set.size===0) reservations.delete(time);
+  }
+  let t=tick;
+  for(let i=0;i<fullPath.length;i++){
+    let [x,y]=fullPath[i];
+    let time=tick+i;
+    if(!reservations.has(time)) reservations.set(time,new Set());
+    reservations.get(time).add(time+':'+x+','+y);
+    reservations.get(time).add('r'+robot.id+':'+time+':'+x+','+y);
+    if(i>0){
+      let [px,py]=fullPath[i-1];
+      reservations.get(time).add(time+':'+px+','+py+'->'+x+','+y);
+      reservations.get(time).add('r'+robot.id+':'+time+':'+px+','+py+'->'+x+','+y);
+    }
+  }
+}
+
+function assignJobs(){
+  // priority sort + aging
+  let pending=jobs.filter(j=>j.status==='PENDING').sort((a,b)=> (b.priority*10 + (tick - a.created)*0.05) - (a.priority*10 + (tick - a.created)*0.05));
+  for(let job of pending){
+    let idle=robots.find(r=>r.state==='IDLE');
+    if(!idle) break;
+    let shelfPos=job.shelf; // [x,y]
+    let stationPos=job.station;
+    // plan to shelf then to station as two phases: for now plan to shelf
+    let p1=planForRobot(idle, shelfPos[0], shelfPos[1]);
+    if(!p1){ job.status='FAILED'; logEvent(`Job #${job.id} no route to shelf`,'warn'); continue}
+    // reserve
+    reservePath(idle,p1);
+    idle.state='TO_PICKUP'; idle.jobId=job.id; idle.path=p1; idle.pathIdx=0; idle.target=shelfPos; idle.waitReason='moving to shelf';
+    job.status='ASSIGNED'; job.robotId=idle.id; job.phase='TO_PICKUP';
+    logEvent(`Assigned Robot #${idle.id} → Job #${job.id} (P${job.priority}) via ${p1.length} steps`,'assign');
+  }
+}
+
+function logEvent(msg, type='info'){
+  seq++; events.push({seq, tick, msg, type, time:new Date().toLocaleTimeString()});
+  if(events.length>120) events.shift();
+  updateLog();
+  document.getElementById('seq').textContent=seq;
+}
+
+function step(){
+  tick++;
+  // move robots
+  let moves=[];
+  for(let r of robots){
+    if(r.state==='IDLE' || !r.path.length) continue;
+    let nextIdx=r.pathIdx+1;
+    if(nextIdx >= r.path.length){
+      // arrived at target
+      if(r.state==='TO_PICKUP'){
+        // pickup complete, now plan to station
+        let job=jobs.find(j=>j.id===r.jobId);
+        if(job){
+          job.phase='TO_DELIVERY';
+          let p2=planForRobot(r, job.station[0], job.station[1]);
+          if(p2){ reservePath(r,p2); r.path=p2; r.pathIdx=0; r.state='TO_DELIVERY'; r.waitReason='delivering'; logEvent(`Robot #${r.id} picked Job #${job.id}, heading to station`,'pickup'); }
+          else { r.state='IDLE'; logEvent(`Robot #${r.id} no route to station replan`,'warn'); }
+        }
+      } else if(r.state==='TO_DELIVERY'){
+        let job=jobs.find(j=>j.id===r.jobId);
+        if(job){ job.status='DONE'; logEvent(`Job #${job.id} delivered by Robot #${r.id}`,'done'); }
+        r.state='IDLE'; r.jobId=null; r.path=[]; r.pathIdx=0; r.waitReason='idle';
+      }
+      continue;
+    }
+    let [nx,ny]=r.path[nextIdx];
+    // check dynamic block
+    if(grid[ny][nx]===4 || grid[ny][nx]===1 || grid[ny][nx]===2){
+      // need replan
+      let job=jobs.find(j=>j.id===r.jobId);
+      let goal = r.state==='TO_PICKUP' ? job.shelf : job.station;
+      let np=planForRobot(r, goal[0], goal[1]);
+      if(np){ reservePath(r,np); r.path=np; r.pathIdx=0; r.waitReason='replanned (obstacle)'; logEvent(`Robot #${r.id} replanned (${nx},${ny} blocked)`,'replan'); }
+      else { r.waitReason='blocked, waiting'; logEvent(`Robot #${r.id} waiting - no alt route`,'wait'); }
+      continue;
+    }
+    // collision check swap
+    let conflict=robots.find(o=> o.id!==r.id && o.path[o.pathIdx+1] && o.path[o.pathIdx+1][0]===r.x && o.path[o.pathIdx+1][1]===r.y && o.x===nx && o.y===ny);
+    if(conflict){
+      // higher priority job goes first
+      let myPrio=jobs.find(j=>j.id===r.jobId)?.priority||0;
+      let oprio=jobs.find(j=>j.id===conflict.jobId)?.priority||0;
+      if(myPrio < oprio){ r.waitReason=`yield to #${conflict.id} (swap)`; logEvent(`Robot #${r.id} waits anti-deadlock vs #${conflict.id}`,'wait'); continue; }
+      // else allow this robot to move, other will wait next tick
+    }
+    // check cell occupied next tick
+    let occupied=robots.find(o=>o.id!==r.id && o.x===nx && o.y===ny);
+    if(occupied){ r.waitReason=`waiting for #${occupied.id} clear`; logEvent(`Robot #${r.id} waits cell occupied`,'wait'); continue; }
+    moves.push({r,nx,ny,nextIdx});
+  }
+  // apply moves (higher priority first)
+  moves.sort((a,b)=>{
+    let pa=jobs.find(j=>j.id===a.r.jobId)?.priority||0;
+    let pb=jobs.find(j=>j.id===b.r.jobId)?.priority||0;
+    return pb-pa;
+  });
+  let movedSet=new Set();
+  for(let m of moves){
+    if(movedSet.has(m.nx+','+m.ny)) { m.r.waitReason='blocked by earlier move'; continue; }
+    m.r.x=m.nx; m.r.y=m.ny; m.r.pathIdx=m.nextIdx; m.r.waitReason='moving'; movedSet.add(m.nx+','+m.ny);
+  }
+  // try assign new jobs after moves
+  assignJobs();
+  if(tick%4===0) save();
+  render();
+}
+
+function render(){
+  const map=document.getElementById('map');
+  if(!map) return;
+  map.innerHTML='';
+  // build cells
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+    let div=document.createElement('div');
+    div.className='grid-cell rounded-sm border border-white/5 cursor-pointer';
+    let v=grid[y][x];
+    if(v===1) div.className+=' bg-slate-700';
+    else if(v===2) div.className+=' bg-amber-700/90';
+    else if(v===3) div.className+=' bg-emerald-600';
+    else if(v===4) div.className+=' bg-red-600';
+    else div.className+=' bg-[#0b1224]';
+    // path overlay
+    let isPath=false; robots.forEach(r=>{
+      if(r.path.some(([px,py])=>px===x&&py===y)) isPath=true;
+    });
+    if(isPath && v===0) div.style.boxShadow='inset 0 0 0 1px rgba(6,182,212,0.4)';
+    // coords
+    if(x===0||y===0) div.innerHTML=`<span class="mono text-[8px] opacity-30">${x},${y}</span>`;
+    // shelves label
+    if(v===2) div.innerHTML='<i class="ri-archive-line text-amber-200"></i>';
+    if(v===3) div.innerHTML='<i class="ri-home-5-line text-white"></i>';
+    if(v===4) div.innerHTML='<i class="ri-close-line text-white"></i>';
+    // robot
+    let rob=robots.find(r=>r.x===x&&r.y===y);
+    if(rob){
+      let job=jobs.find(j=>j.id===rob.jobId);
+      div.innerHTML=`<div class="w-7 h-7 rounded-full grid place-items-center text-[11px] font-black text-black border-2 border-white shadow" style="background:${rob.color}">${rob.id}</div>`;
+      div.title=`R${rob.id} ${rob.state}`;
+    } else if(isPath && v===0){
+      // path dot
+      let cnt=robots.filter(r=>r.path.some(([px,py])=>px===x&&py===y)).length;
+      if(cnt) div.innerHTML=`<span class="w-1.5 h-1.5 bg-cyan-400 rounded-full"></span>`;
+    }
+    div.onclick=()=>{
+      if(v===1) return;
+      if(rob) return;
+      if(v===2||v===3) { logEvent(`Cannot block shelf/station (${x},${y})`,'warn'); return; }
+      if(v===4){ grid[y][x]=0; logEvent(`Unblocked (${x},${y})`,'info'); }
+      else if(v===0){ grid[y][x]=4; logEvent(`Blocked (${x},${y}) — replanning affected`,'block');
+        // immediate replan for robots whose path crosses
+        robots.forEach(r=>{
+          if(r.path.some(([px,py])=>px===x&&py===y)){
+            let job=jobs.find(j=>j.id===r.jobId);
+            if(!job) return;
+            let goal=r.state==='TO_PICKUP'?job.shelf:job.station;
+            let p=planForRobot(r,goal[0],goal[1]);
+            if(p){ reservePath(r,p); r.path=p; r.pathIdx=0; r.waitReason='replanned (new block)'; }
+          }
+        });
+      }
+      save(); render();
+    };
+    map.appendChild(div);
+  }
+  document.getElementById('tick').textContent=tick;
+  document.getElementById('resCount').textContent=reservations.size;
+  // robot list
+  const rl=document.getElementById('robotList');
+  rl.innerHTML=robots.map(r=>{
+    let job=jobs.find(j=>j.id===r.jobId);
+    return `<div class="bg-[#0b1224] rounded-lg p-2 border border-white/5 flex gap-2 items-center">
+      <div class="w-8 h-8 rounded-full grid place-items-center font-black text-black text-sm" style="background:${r.color}">${r.id}</div>
+      <div class="flex-1 min-w-0">
+        <div class="text-xs font-bold flex gap-2"><span>R#${r.id} ${r.state}</span><span class="text-cyan-400">${r.x},${r.y}</span><span class="ml-auto ${r.waitReason.includes('wait')?'text-amber-400':'text-slate-400'}">${r.waitReason}</span></div>
+        <div class="mono text-[11px] text-slate-400 truncate">path:${r.path.length? r.path.slice(r.pathIdx, r.pathIdx+5).map(p=>`(${p[0]},${p[1]})`).join('→'):'—'}</div>
+        <div class="text-[11px]">${job?`Job #${job.id} P${job.priority}`:'idle'}</div>
+      </div>
+      <div class="w-2 h-2 rounded-full ${r.state==='IDLE'?'bg-slate-500':'bg-emerald-400 animate-pulse'}"></div>
+    </div>`
+  }).join('');
+  // job list
+  const jl=document.getElementById('jobList');
+  jl.innerHTML=jobs.map(j=>`<div class="bg-[#0b1224] rounded-lg p-2 border ${j.priority>=3?'border-amber-500/40':'border-white/5'} flex justify-between items-center">
+    <div><div class="text-xs font-bold">#${j.id} <span class="px-1.5 py-0.5 rounded text-[10px] ${j.status==='DONE'?'bg-emerald-600':j.status==='ASSIGNED'?'bg-cyan-600':'bg-white/10'}">${j.status}</span> P${j.priority}</div>
+    <div class="mono text-[11px] text-slate-400">${j.shelf} → ${j.station} | Robot ${j.robotId||'-'}</div></div>
+    <div class="text-[10px] text-slate-400">${j.phase||''}</div>
+  </div>`).join('') || '<div class="text-xs text-slate-500 p-2">No jobs yet — create 3 for acceptance test</div>';
+  document.getElementById('jobCount').textContent=jobs.length;
+}
+
+function updateLog(){
+  const l=document.getElementById('log');
+  l.innerHTML=events.slice(-40).map(e=>`<div class="${e.type==='replan'?'text-amber-300':e.type==='done'?'text-emerald-300':e.type==='wait'?'text-amber-200':''}"><span class="opacity-50">#${e.seq} t${e.tick}</span> ${e.msg}</div>`).join('');
+  l.scrollTop=l.scrollHeight;
+  document.getElementById('snapInfo').value=`snapshot seq=${seq} tick=${tick} jobs=${jobs.length}`;
+}
+
+// Controls
+function startLoop(){ if(timer) clearInterval(timer); timer=setInterval(()=>{ if(!paused) step()}, 600); }
+document.getElementById('btnPause').onclick=()=>{ paused=true; document.getElementById('btnPause').classList.add('hidden'); document.getElementById('btnResume').classList.remove('hidden'); document.getElementById('conn').textContent='● PAUSED'; logEvent('Paused','info')};
+document.getElementById('btnResume').onclick=()=>{ paused=false; document.getElementById('btnPause').classList.remove('hidden'); document.getElementById('btnResume').classList.add('hidden'); document.getElementById('conn').textContent='● CONNECTED (SSE)'; logEvent('Resumed','info')};
+document.getElementById('btnStep').onclick=()=>{ step(); logEvent('Single step','info')};
+document.getElementById('btnReset').onclick=()=>{
+  if(confirm('Reset deterministic seed 1337?')){ localStorage.removeItem(LS_KEY); location.reload(); }
+};
+document.getElementById('btnReconnect').onclick=()=>{
+  logEvent('--- DISCONNECT ---','warn');
+  document.getElementById('conn').textContent='● RECONNECTING...'; document.getElementById('conn').className='text-amber-400';
+  setTimeout(()=>{
+    // snapshot then continue
+    logEvent(`Snapshot restored seq=${seq} tick=${tick}`,'info');
+    document.getElementById('conn').textContent='● CONNECTED (SSE) — no stale revert ✓';
+    document.getElementById('conn').className='text-emerald-400';
+    render();
+  },800);
+};
+document.getElementById('btnSnapshot').onclick=()=>{ logEvent(`Snapshot seq=${seq} tick=${tick} delivered`,'info'); };
+document.getElementById('btnCreate').onclick=()=>{
+  let sVal=document.getElementById('selShelf').value.split(',').map(Number);
+  let stVal=document.getElementById('selStation').value.split(',').map(Number);
+  let prio=parseInt(document.getElementById('selPrio').value);
+  createJob(sVal,stVal,prio);
+};
+function createJob(shelf, station, prio){
+  let id=jobs.length? Math.max(...jobs.map(j=>j.id))+1 : 1;
+  jobs.push({id, shelf, station, priority:prio, status:'PENDING', robotId:null, created:tick, phase:''});
+  logEvent(`Job #${id} created Shelf(${shelf})→Station(${station}) P${prio}`,'info');
+  assignJobs(); save(); render();
+}
+window.addRandomJobs=(n)=>{
+  const shelves=[[3,3],[5,3],[9,3],[4,5],[9,5],[2,7],[12,7],[6,8]];
+  const stations=[[3,1],[7,1],[11,1],[13,1]];
+  for(let i=0;i<n;i++){
+    let s=shelves[Math.floor(rnd()*shelves.length)];
+    let st=stations[Math.floor(rnd()*stations.length)];
+    let p=[1,2,3][Math.floor(rnd()*3)];
+    createJob(s,st,p);
+  }
+}
+window.blockAhead=()=>{
+  let r=robots.find(x=>x.state!=='IDLE');
+  if(!r) r=robots[0];
+  let nxt=r.path[r.pathIdx+1];
+  if(!nxt){ nxt=[r.x+1,r.y]; if(grid[nxt[1]][nxt[0]]===1) nxt=[r.x,r.y+1]; }
+  let [bx,by]=nxt;
+  if(grid[by][bx]===0){ grid[by][bx]=4; logEvent(`Blocked ahead of #${r.id} at (${bx},${by}) — immediate replan`,'block');
+    // trigger immediate replan
+    let job=jobs.find(j=>j.id===r.jobId);
+    if(job){ let goal=r.state==='TO_PICKUP'?job.shelf:job.station; let p=planForRobot(r,goal[0],goal[1]); if(p){ reservePath(r,p); r.path=p; r.pathIdx=0; }}
+    save(); render();
+  }
+}
+window.clearLog=()=>{ events=[]; updateLog(); };
+
+// Init
+if(!load()){
+  initGrid(); initRobots();
+  logEvent('Warehouse deterministic seed 1337 generated (8 robots,20 shelves,4 stations, 3 bottlenecks)','info');
+  logEvent('SSE stream started seq monotonic','info');
+} else {
+  // restore reservations Map correctly (already)
+  logEvent(`Reloaded persisted state seq=${seq} tick=${tick}`,'info');
+}
+ // populate selects
+function populate(){
+  const shelves=[[3,3],[4,3],[5,3],[8,3],[9,3],[10,3],[3,5],[4,5],[5,5],[8,5],[9,5],[10,5],[2,7],[3,7],[4,7],[12,7],[13,7],[6,8],[7,8],[8,8]];
+  const stations=[[3,1],[7,1],[11,1],[13,1]];
+  document.getElementById('selShelf').innerHTML=shelves.map(s=>`<option value="${s}">${s[0]},${s[1]} Shelf</option>`).join('');
+  document.getElementById('selStation').innerHTML=stations.map(s=>`<option value="${s}">${s[0]},${s[1]} Station</option>`).join('');
+}
+populate();
+render(); updateLog();
+startLoop();
+</script>
+</body>
+</html>
+

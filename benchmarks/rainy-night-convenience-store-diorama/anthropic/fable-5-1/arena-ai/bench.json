@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "kind": "static",
+  "entry": "index.html",
+  "notes": "单个自包含 HTML（约 45KB），无 package.json、无构建步骤，直接托管即可。three.js 及 EffectComposer/UnrealBloomPass 等 addons 通过 importmap 从 jsDelivr CDN 加载，预览时需要联网；页面用 ES module，必须走 HTTP 打开。"
+}
