@@ -1,0 +1,22 @@
+{
+  "name": "rainy-night-convenience-store-diorama",
+  "version": "1.0.0",
+  "description": "雨夜便利店街角 三渲二微缩场景 (three.js)",
+  "main": "index.js",
+  "scripts": {
+    "build": "node build.mjs",
+    "preview": "python3 -m http.server 8080"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "esbuild": "^0.24.0",
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^23.11.1"
+  },
+  "private": true
+}

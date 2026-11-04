@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "kind": "static",
+  "entry": "index.html",
+  "notes": "静态托管：index.html 用 ES module 加载 ./src/main.js，importmap 把 three 指向本地 ./vendor/three.module.js，无 CDN、无 package.json、无构建步骤。module + importmap 必须走 HTTP，不能 file:// 打开。preview.png 是产出自己的截图。"
+}

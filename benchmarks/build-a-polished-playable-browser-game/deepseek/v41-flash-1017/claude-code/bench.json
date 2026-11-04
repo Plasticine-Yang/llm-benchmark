@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "kind": "static",
+  "entry": "index.html",
+  "notes": "纯静态：index.html + style.css + js/（core/render/ui 三个普通 script），无 package.json、无构建步骤、无外部资源，README 也说明直接打开或静态托管即可。"
+}

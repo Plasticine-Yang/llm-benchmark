@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0d2d36">
+  <meta name="description" content="Pelican Pedal — a juicy seaside arcade ride. Hop the pier, snag fish, and chase your best score.">
+  <title>Pelican Pedal — Seaside Arcade</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230d2d36'/%3E%3Ccircle cx='20' cy='45' r='9' fill='none' stroke='%23ffc24b' stroke-width='3'/%3E%3Ccircle cx='47' cy='45' r='9' fill='none' stroke='%23ffc24b' stroke-width='3'/%3E%3Cpath d='M20 45l10-15h12L47 45M30 30l5 8' fill='none' stroke='%23fff4dc' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M30 23c5-8 12-8 14-2 5-1 9 3 7 7l-12 1z' fill='%23fff4dc'/%3E%3Cpath d='M48 25l11 3-10 4z' fill='%23ff6b57'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="mode-menu">
+  <canvas id="game" aria-label="Pelican Pedal game area"></canvas>
+  <div class="scene-vignette" aria-hidden="true"></div>
+  <div class="scene-grain" aria-hidden="true"></div>
+
+  <div class="hud" id="hud">
+    <div class="hud-inner">
+      <div class="hud-side hud-left">
+        <div class="mini-brand"><span class="brand-sun"></span><span>PELICAN PEDAL</span></div>
+        <div class="hearts" id="hearts" aria-label="Lives remaining: 3">
+          <span class="heart" aria-hidden="true"></span>
+          <span class="heart" aria-hidden="true"></span>
+          <span class="heart" aria-hidden="true"></span>
+        </div>
+      </div>
+
+      <div class="score-cluster">
+        <div class="score-label">SCORE</div>
+        <div class="score" id="score">00000</div>
+        <div class="score-meta">
+          <span id="distance">0 M</span>
+          <span class="meta-dot"></span>
+          <span id="fishHud">0 FISH</span>
+        </div>
+        <div class="fever-wrap" id="feverWrap">
+          <div class="fever-labels">
+            <span class="fever-name" id="feverName">FRENZY</span>
+            <span class="combo-chip" id="comboChip">COMBO ×1</span>
+          </div>
+          <div class="fever-track"><div class="fever-fill" id="feverFill"></div></div>
+        </div>
+      </div>
+
+      <div class="hud-side hud-right">
+        <button class="icon-btn" id="soundBtn" type="button" aria-label="Mute sound" title="Sound (M)">
+          <svg class="icon-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 8.5c1.2 1 1.2 6 0 7"/><path d="M19 6c2.5 2.2 2.5 9.8 0 12"/></svg>
+          <svg class="icon-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="m16 9 5 6M21 9l-5 6"/></svg>
+        </button>
+        <button class="icon-btn" id="pauseBtn" type="button" aria-label="Pause game" title="Pause (P)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="touch-ui" id="touchUi" aria-hidden="true">
+    <button class="touch-btn touch-duck" id="duckBtn" type="button" tabindex="-1">
+      <span class="touch-icon">↓</span><span class="touch-label">TUCK</span>
+    </button>
+    <button class="touch-btn touch-hop" id="hopBtn" type="button" tabindex="-1">
+      <span class="touch-icon">↑</span><span class="touch-label">HOP</span>
+    </button>
+  </div>
+
+  <main class="screen menu-screen is-active" id="menuScreen">
+    <div class="menu-scrim" aria-hidden="true"></div>
+    <div class="menu-inner">
+      <section class="hero">
+        <div class="eyebrow"><span class="eyebrow-dot"></span> PIER 12 <span class="eyebrow-rule"></span> SEASIDE ARCADE</div>
+        <h1 class="logo" aria-label="Pelican Pedal">
+          <span class="logo-line logo-top">PELICAN</span>
+          <span class="logo-line logo-bottom">PEDAL<span class="logo-mark">!</span></span>
+        </h1>
+        <p class="tagline">Ride the pier. Snag the fish.<br><em>Try not to flip the bird.</em></p>
+
+        <div class="hero-actions">
+          <button class="btn btn-primary" id="startBtn" type="button">
+            <span class="play-tri" aria-hidden="true"></span>
+            <span>START RIDING</span>
+            <kbd>SPACE</kbd>
+          </button>
+          <button class="btn btn-ghost" id="howBtn" type="button" aria-expanded="false">HOW TO PLAY</button>
+        </div>
+
+        <div class="how-panel" id="howPanel" hidden>
+          <div class="how-row"><span class="how-num">01</span><span><b>HOP</b> the crabs, logs and puddles.</span></div>
+          <div class="how-row"><span class="how-num">02</span><span><b>TUCK</b> under swooping gulls, or slam down fast.</span></div>
+          <div class="how-row"><span class="how-num">03</span><span><b>CHAIN FISH</b> to build a combo and trigger Fish Frenzy.</span></div>
+        </div>
+
+        <div class="control-line" aria-label="Controls">
+          <span><kbd>↑</kbd><kbd>SPACE</kbd> HOP</span>
+          <span><kbd>↓</kbd> TUCK</span>
+          <span><kbd>P</kbd> PAUSE</span>
+          <span class="touch-only">TAP TO HOP • HOLD TUCK TO DUCK</span>
+        </div>
+      </section>
+
+      <aside class="menu-side">
+        <div class="leader-card">
+          <div class="leader-head">
+            <div>
+              <div class="leader-kicker">LOCAL HIGH SCORES</div>
+              <h2>PIER LEGENDS</h2>
+            </div>
+            <span class="leader-badge">TOP 5</span>
+          </div>
+          <div class="table-wrap">
+            <table class="score-table">
+              <thead><tr><th>#</th><th>RIDER</th><th>SCORE</th><th>DIST</th></tr></thead>
+              <tbody id="menuScores"></tbody>
+            </table>
+          </div>
+          <div class="tag-row">
+            <label for="tagInput">RIDER TAG</label>
+            <input id="tagInput" type="text" maxlength="3" value="PEL" autocomplete="off" spellcheck="false" aria-label="Three letter rider tag">
+            <span class="tag-help">3 LETTERS</span>
+          </div>
+        </div>
+        <div class="tip-strip"><span class="tip-star">★</span> TIP: HOLD JUMP LONGER FOR EXTRA HEIGHT</div>
+      </aside>
+    </div>
+    <div class="menu-foot">
+      <span>BEST <strong id="menuBest">00000</strong></span>
+      <span class="foot-dot">•</span>
+      <span>NO BRAKES. NO REGRETS.</span>
+    </div>
+  </main>
+
+  <section class="screen pause-screen" id="pauseScreen" aria-hidden="true">
+    <div class="modal-card pause-card">
+      <div class="kicker">TAKING A BREATHER</div>
+      <h2>PAUSED</h2>
+      <p class="modal-copy">The fish can wait. The pier can't.</p>
+      <div class="pause-stats">
+        <div><span>SCORE</span><b id="pauseScore">0</b></div>
+        <div><span>DISTANCE</span><b id="pauseDistance">0 m</b></div>
+        <div><span>FISH</span><b id="pauseFish">0</b></div>
+      </div>
+      <button class="btn btn-primary btn-wide" id="resumeBtn" type="button"><span>KEEP PEDALING</span><kbd>P</kbd></button>
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="restartPauseBtn" type="button">RESTART</button>
+        <button class="btn btn-ghost" id="quitBtn" type="button">MENU</button>
+      </div>
+      <button class="sound-line" id="soundBtnPause" type="button">SOUND: <b>ON</b></button>
+    </div>
+  </section>
+
+  <section class="screen over-screen" id="overScreen" aria-hidden="true">
+    <div class="modal-card result-card">
+      <div class="new-best" id="newBest" hidden>★ NEW PERSONAL BEST ★</div>
+      <div class="kicker" id="overKicker">RUN COMPLETE</div>
+      <h2 id="overTitle">BEACHED!</h2>
+      <div class="final-score"><span id="finalScore">0</span><small>POINTS</small></div>
+      <div class="result-stats">
+        <div><span>DISTANCE</span><b id="finalDistance">0 m</b></div>
+        <div><span>FISH</span><b id="finalFish">0</b></div>
+        <div><span>BEST COMBO</span><b id="finalCombo">×1</b></div>
+      </div>
+      <div class="mini-board">
+        <div class="mini-board-head"><span>LOCAL TOP 5</span><span id="yourRank">—</span></div>
+        <table class="score-table score-table-small">
+          <thead><tr><th>#</th><th>RIDER</th><th>SCORE</th></tr></thead>
+          <tbody id="overScores"></tbody>
+        </table>
+      </div>
+      <div class="btn-row result-actions">
+        <button class="btn btn-primary" id="againBtn" type="button"><span>RIDE AGAIN</span><kbd>R</kbd></button>
+        <button class="btn btn-ghost" id="menuBtn" type="button">MENU</button>
+      </div>
+      <p class="result-hint" id="resultHint">SPACE OR R FOR INSTANT RESTART</p>
+    </div>
+  </section>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="sr-only" id="live" aria-live="polite"></div>
+
+  <noscript><div class="noscript">Pelican Pedal needs JavaScript to ride.</div></noscript>
+  <script src="game.js"></script>
+</body>
+</html>

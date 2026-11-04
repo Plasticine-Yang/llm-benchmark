@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1b1238">
+<meta name="description" content="Pelican Pedal — a one-button seaside bike ride. Snag fish, dodge the boardwalk, chase the sunset.">
+<title>Pelican Pedal — Sunset Boardwalk</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%23241540'/%3E%3Ccircle cx='32' cy='33' r='19' fill='%23ff6b6b'/%3E%3Ccircle cx='39' cy='27' r='4' fill='%23fff4dd'/%3E%3Cpath d='M44 31 58 35 44 39Z' fill='%23ffd166'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <canvas id="game" aria-label="Pelican Pedal — ride a bicycle, collect fish, avoid obstacles"></canvas>
+  <div class="vignette" aria-hidden="true"></div>
+
+  <header id="hud" class="hud hidden" aria-hidden="true">
+    <div class="hud-top">
+      <div class="hud-left">
+        <div class="hearts" id="hearts" aria-label="Lives">
+          <svg class="heart" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.1S3.7 15.9 1.6 11.3C-.1 7.7 2 3.7 6 3.7c2.2 0 3.8 1.2 4.7 2.6.3.4.9.4 1.2 0 .9-1.4 2.5-2.6 4.7-2.6 4 0 6.1 4 4.4 7.6C19.9 15.9 12 21.1 12 21.1Z"/></svg>
+          <svg class="heart" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.1S3.7 15.9 1.6 11.3C-.1 7.7 2 3.7 6 3.7c2.2 0 3.8 1.2 4.7 2.6.3.4.9.4 1.2 0 .9-1.4 2.5-2.6 4.7-2.6 4 0 6.1 4 4.4 7.6C19.9 15.9 12 21.1 12 21.1Z"/></svg>
+          <svg class="heart" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.1S3.7 15.9 1.6 11.3C-.1 7.7 2 3.7 6 3.7c2.2 0 3.8 1.2 4.7 2.6.3.4.9.4 1.2 0 .9-1.4 2.5-2.6 4.7-2.6 4 0 6.1 4 4.4 7.6C19.9 15.9 12 21.1 12 21.1Z"/></svg>
+        </div>
+        <div class="best-mini">BEST <b id="bestMini">0</b></div>
+      </div>
+
+      <div class="hud-center">
+        <div class="score" id="score">0</div>
+        <div class="run-stats">
+          <span id="distance">0 m</span>
+          <span class="dot" aria-hidden="true"></span>
+          <span id="fishCount">0 fish</span>
+        </div>
+        <div class="combo-wrap" id="comboWrap">
+          <span class="combo-label">COMBO</span>
+          <span class="combo" id="combo">x1</span>
+          <span class="combo-track"><i id="comboBar"></i></span>
+        </div>
+      </div>
+
+      <div class="hud-right">
+        <button class="icon-btn" id="muteBtn" type="button" aria-label="Mute sound">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 9h4l5-4.2v14.4L8 15H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1Z"/>
+            <path class="wave" d="M16 8.6c1.4 1.1 2 2.1 2 3.4s-.6 2.3-2 3.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path class="wave" d="M18.8 6c2.4 1.7 3.6 3.6 3.6 6s-1.2 4.3-3.6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <line class="slash" x1="3" y1="3" x2="21" y2="21"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="pauseBtn" type="button" aria-label="Pause game">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="5" width="4.4" height="14" rx="2.2"/><rect x="14.1" y="5" width="4.4" height="14" rx="2.2"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="frenzy-wrap" id="frenzyWrap">
+      <span>FISH FRENZY</span>
+      <div class="frenzy-track"><i id="frenzyBar"></i></div>
+    </div>
+  </header>
+
+  <div class="hint hidden" id="hint">
+    <span class="hint-key">TAP / SPACE</span>
+    <span>jump</span>
+    <span class="hint-sep">·</span>
+    <span>again to flap</span>
+    <span class="hint-sep">·</span>
+    <span>swipe down to dive</span>
+  </div>
+
+  <section class="screen start" id="startScreen">
+    <div class="panel start-panel">
+      <div class="sun-strip" aria-hidden="true"></div>
+      <div class="eyebrow">Sunset Boardwalk · Est. 1987</div>
+      <h1 class="logo">Pelican<span>Pedal</span></h1>
+      <p class="tagline">One bird. One bike. A whole lot of fish.</p>
+
+      <button class="btn primary" id="playBtn" type="button">
+        <span>Start Riding</span>
+        <kbd>SPACE</kbd>
+      </button>
+
+      <div class="hint-grid" aria-label="Controls">
+        <div><kbd>SPACE</kbd><span>Jump / flap</span></div>
+        <div><kbd>↓</kbd><span>Dive</span></div>
+        <div><kbd>P</kbd><span>Pause</span></div>
+        <div><kbd>TAP</kbd><span>Jump · swipe ↓</span></div>
+      </div>
+
+      <div class="scoreboard">
+        <h2>Local Legends</h2>
+        <ol class="score-list" id="startScores"></ol>
+      </div>
+
+      <p class="footnote">Grab fish to build your combo. Dodge the beach. Keep the feathers dry.</p>
+    </div>
+  </section>
+
+  <section class="screen hidden" id="pauseScreen">
+    <div class="panel pause-panel">
+      <div class="eyebrow">Taking a breather</div>
+      <h2 class="over-title small">Paused</h2>
+      <p class="pause-copy">The tide can wait. Your combo is safe.</p>
+      <button class="btn primary" id="resumeBtn" type="button">
+        <span>Keep Pedaling</span>
+        <kbd>P</kbd>
+      </button>
+      <div class="button-row">
+        <button class="btn ghost" id="restartBtn" type="button">Restart</button>
+        <button class="btn ghost" id="menuBtn" type="button">Menu</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen hidden" id="overScreen">
+    <div class="panel over-panel">
+      <div class="eyebrow" id="overEyebrow">Run complete</div>
+      <h2 class="over-title">Wipeout!</h2>
+      <div class="new-best hidden" id="newBest">New local best</div>
+      <div class="final-score" id="overScore">0</div>
+      <div class="final-stats">
+        <div><span>Best</span><b id="overBest">0</b></div>
+        <div><span>Distance</span><b id="overDistance">0 m</b></div>
+        <div><span>Fish</span><b id="overFish">0</b></div>
+      </div>
+      <button class="btn primary" id="againBtn" type="button">
+        <span>Ride Again</span>
+        <kbd>SPACE</kbd>
+      </button>
+      <div class="button-row">
+        <button class="btn ghost" id="overMenuBtn" type="button">Menu</button>
+      </div>
+      <div class="scoreboard">
+        <h2>Top Rides</h2>
+        <ol class="score-list" id="overScores"></ol>
+      </div>
+    </div>
+  </section>
+</div>
+<script src="game.js"></script>
+</body>
+</html>

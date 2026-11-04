@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "kind": "static",
+  "entry": "index.html",
+  "notes": "纯静态：index.html + style.css + game.js。无 package.json、无构建步骤，直接打开 index.html 即可游玩（也可用任意静态服务器托管）。"
+}

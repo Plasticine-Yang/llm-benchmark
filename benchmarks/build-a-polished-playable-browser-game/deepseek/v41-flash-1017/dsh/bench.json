@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "kind": "static",
+  "entry": "index.html",
+  "notes": "纯静态：index.html + styles.css + game.js，canvas 全程序化绘制，无 package.json、无构建步骤、无网络请求。"
+}

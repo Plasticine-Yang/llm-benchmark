@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "kind": "static",
+  "entry": "index.html",
+  "notes": "单个自包含 index.html（内联 CSS + SVG + script），无外部资源、无 package.json、无构建步骤，直接托管即可。"
+}

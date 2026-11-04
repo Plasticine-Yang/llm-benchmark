@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#123c46">
+<meta name="description" content="Pelican Pedal — a juicy one-button seaside bike game.">
+<title>Pelican Pedal</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f3a44'/%3E%3Cpath d='M10 34c0-9 9-16 20-16 8 0 13 3 16 9l10-5-5 11 5 5-12 2c-3 6-8 9-14 9-11 0-20-7-20-15z' fill='%23fff4de'/%3E%3Ccircle cx='41' cy='30' r='2.6' fill='%230f3a44'/%3E%3Cpath d='M46 33l12 4-12 5z' fill='%23ff9a3c'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <canvas id="game" aria-label="Pelican Pedal — tap or press space to jump"></canvas>
+  <div id="vignette" aria-hidden="true"></div>
+
+  <header id="hud" class="hidden">
+    <div class="hud-left">
+      <div class="score-wrap">
+        <span class="label">SCORE</span>
+        <span id="score" class="score">0</span>
+        <span id="dist" class="dist">0 m</span>
+      </div>
+      <div id="combo" class="combo"><span id="combo-x">x2</span><i></i></div>
+    </div>
+    <div class="hud-right">
+      <div class="best-wrap"><span class="label">BEST</span><span id="best">0</span></div>
+      <button id="btn-sound" class="icon-btn" aria-label="Toggle sound" title="Sound">♪</button>
+      <button id="btn-pause" class="icon-btn" aria-label="Pause" title="Pause">❚❚</button>
+    </div>
+  </header>
+
+  <div id="hint" class="hidden"><span>TAP / SPACE TO FLAP</span></div>
+
+  <section id="menu" class="overlay">
+    <div class="panel menu-panel">
+      <div class="kicker">A SEASIDE RIDE</div>
+      <h1>PELICAN<br><span>PEDAL</span></h1>
+      <p class="tagline">Hop the beach junk. Snack the fish. Do not wipe out.</p>
+      <button id="btn-play" class="btn primary">Ride<span class="key-hint">SPACE</span></button>
+      <div class="controls-row">
+        <div class="ctrl"><kbd>SPACE</kbd><span>Jump — tap again mid-air to flap</span></div>
+        <div class="ctrl"><kbd>TAP</kbd><span>Same thing with one thumb</span></div>
+        <div class="ctrl"><kbd>P</kbd><span>Pause / resume</span></div>
+      </div>
+      <div class="scores-block">
+        <div class="scores-head"><span>LOCAL HIGH SCORES</span><span>TOP 5</span></div>
+        <ol id="menu-scores" class="scores"></ol>
+      </div>
+    </div>
+  </section>
+
+  <section id="pause" class="overlay hidden">
+    <div class="panel small-panel">
+      <div class="kicker">TAKE A BREATH</div>
+      <h2>PAUSED</h2>
+      <button id="btn-resume" class="btn primary">Resume</button>
+      <button id="btn-restart-pause" class="btn ghost">Restart</button>
+      <button id="btn-quit" class="btn ghost">Main menu</button>
+    </div>
+  </section>
+
+  <section id="over" class="overlay hidden">
+    <div class="panel">
+      <div id="record" class="record hidden">NEW RECORD!</div>
+      <div class="kicker">SPLASH DOWN</div>
+      <h2>WIPEOUT</h2>
+      <div class="result-row">
+        <div><span class="label">SCORE</span><strong id="final-score">0</strong></div>
+        <div><span class="label">DISTANCE</span><strong id="final-dist">0 m</strong></div>
+        <div><span class="label">BEST</span><strong id="final-best">0</strong></div>
+      </div>
+      <button id="btn-again" class="btn primary">Ride again<span class="key-hint">SPACE</span></button>
+      <button id="btn-menu" class="btn ghost">Main menu</button>
+      <div class="scores-block compact">
+        <div class="scores-head"><span>LOCAL HIGH SCORES</span><span>TOP 5</span></div>
+        <ol id="over-scores" class="scores"></ol>
+      </div>
+    </div>
+  </section>
+
+  <div id="rotate" class="hidden"><div>Best enjoyed in landscape — but portrait works too.</div></div>
+</div>
+
+<script src="js/core.js"></script>
+<script src="js/render.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>

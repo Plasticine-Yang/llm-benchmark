@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "kind": "static",
+  "entry": "index.html",
+  "notes": "产出已用 esbuild 把 src/ 与 three 打包内联进根目录 index.html（约 620KB，单个 <script>，无外链、无外部资源），直接托管 index.html 即可。若需修改源码后重新打包：npm install && npm run build。"
+}
