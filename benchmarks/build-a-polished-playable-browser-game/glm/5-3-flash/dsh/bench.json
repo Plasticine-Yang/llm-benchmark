@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "kind": "static",
+  "entry": "index.html",
+  "notes": "纯静态：index.html + style.css + game.js，canvas 绘制、WebAudio 合成音效，无 package.json、无构建步骤、无外部资源引用。"
+}

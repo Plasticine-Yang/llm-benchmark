@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "kind": "static",
+  "entry": "pelican.html",
+  "notes": "纯静态：单个自包含 pelican.html（内联 CSS 与 SVG 动画），无 package.json、无构建步骤、无外部资源引用。"
+}
