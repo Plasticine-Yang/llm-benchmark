@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a1030">
+<title>Pelican Express — Sunset Ride</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="game-wrap">
+  <canvas id="game"></canvas>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div id="hud-left">
+      <div id="score">0</div>
+      <div id="fish-row"><span class="fish-ico">🐟</span><span id="fish-count">0</span></div>
+      <div id="combo" class="hidden">×2 COMBO</div>
+    </div>
+    <div id="hud-right">
+      <button id="btn-mute" class="icon-btn" aria-label="Toggle sound">🔊</button>
+      <button id="btn-pause" class="icon-btn" aria-label="Pause">⏸</button>
+    </div>
+  </div>
+
+  <!-- Start screen -->
+  <div id="screen-start" class="overlay">
+    <div class="panel">
+      <h1 class="title"><span class="t1">PELICAN</span> <span class="t2">EXPRESS</span></h1>
+      <p class="subtitle">🚲 sunset ride along the boardwalk</p>
+      <div class="controls-hint">
+        <div class="hint"><b>SPACE / ↑</b> jump <span class="dot">•</span> hold for a higher hop</div>
+        <div class="hint"><b>↓ / S</b> duck &amp; dive <span class="dot">•</span> <b>P</b> pause</div>
+        <div class="hint touch-hint"><b>TOUCH:</b> tap = jump <span class="dot">•</span> swipe down = duck</div>
+      </div>
+      <button id="btn-start" class="big-btn">START RIDE</button>
+      <div id="best-line">BEST: <span id="best-start">0</span></div>
+      <div id="scores-start" class="score-table hidden">
+        <div class="st-title">🏆 LOCAL HIGH SCORES</div>
+        <ol id="scores-list-start"></ol>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pause screen -->
+  <div id="screen-pause" class="overlay hidden">
+    <div class="panel small">
+      <h2 class="title-2">PAUSED</h2>
+      <button id="btn-resume" class="big-btn">RESUME</button>
+      <button id="btn-quit" class="ghost-btn">END RIDE</button>
+    </div>
+  </div>
+
+  <!-- Game over screen -->
+  <div id="screen-over" class="overlay hidden">
+    <div class="panel">
+      <h2 class="title-2" id="over-title">WIPEOUT!</h2>
+      <p class="subtitle" id="over-sub">The pelican ate sand.</p>
+      <div class="over-stats">
+        <div class="stat"><div class="stat-num" id="over-score">0</div><div class="stat-label">SCORE</div></div>
+        <div class="stat"><div class="stat-num" id="over-fish">0</div><div class="stat-label">FISH</div></div>
+        <div class="stat"><div class="stat-num" id="over-dist">0</div><div class="stat-label">METERS</div></div>
+      </div>
+      <div id="new-record" class="hidden">★ NEW RECORD ★</div>
+      <div id="scores-over" class="score-table hidden">
+        <div class="st-title">🏆 LOCAL HIGH SCORES</div>
+        <ol id="scores-list-over"></ol>
+      </div>
+      <button id="btn-retry" class="big-btn">RIDE AGAIN <span class="key">(SPACE)</span></button>
+    </div>
+  </div>
+</div>
+<script src="game.js"></script>
+</body>
+</html>
