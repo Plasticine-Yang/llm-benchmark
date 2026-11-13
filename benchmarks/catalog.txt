@@ -23,7 +23,7 @@ gpt/6-luna           codex
 deepseek/v4-flash    dsh, opencode, web
 deepseek/v41-flash   dsh
 deepseek/v41-flash-1017 dsh, claude-code, trae
-glm/5-3-flash        opencode, zcode
+glm/5-3-flash        opencode, zcode, dsh
 grok/4-5             grok-cli
 grok/4-6             grok-cli
 seed/2-1-lite        doubao-work
