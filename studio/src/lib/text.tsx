@@ -36,3 +36,9 @@ export function cx(...names: Array<string | false | null | undefined>): string {
 /** 快捷键提示里显示 ⌘ 还是 Ctrl。 */
 export const MOD_KEY =
   typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent) ? '⌘' : 'Ctrl';
+
+/** 事件目标是不是正在输入（输入框 / 文本域 / 可编辑区域），全局快捷键要给它让路。 */
+export function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+}

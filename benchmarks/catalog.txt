@@ -36,3 +36,7 @@ anthropic/sonnet-5-5 arena-ai
 anthropic/haiku-5-5  claude-code, opencode
 google/gemini-4-argon arena-ai
 google/gemini-3-8-flash arena-ai
+google/gemini-4-carbon antigravity
+google/gemini-4-hydrogen antigravity
+qwen/qwen-4-max-preview qoder
+tencent/hy-4         workbuddy

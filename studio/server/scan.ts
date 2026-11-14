@@ -84,7 +84,7 @@ export function scanManifest(startDir: string = process.cwd()): Manifest {
   const sharedPromptPath = join(repoRoot, 'shared-prompt.md');
   const warnings: string[] = [];
 
-  const { catalog, size: catalogSize, problems } = parseCatalog(catalogPath);
+  const { catalog, size: catalogSize, problems, text: catalogText } = parseCatalog(catalogPath);
   warnings.push(...problems);
 
   const known = new Set(catalogTriples(catalog));
@@ -150,6 +150,7 @@ export function scanManifest(startDir: string = process.cwd()): Manifest {
     sharedPrompt: readFileSync(sharedPromptPath, 'utf8'),
     catalog,
     catalogSize,
+    catalogText,
     benchmarks,
     warnings,
     scannedAt: new Date().toISOString(),

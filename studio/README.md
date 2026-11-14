@@ -47,6 +47,18 @@ Studio 顶栏点刷新 → 预览页一键启动 / 查看 / 停止
 * **Studio**：项目栏标题旁的 `+`（或按 `N`）打开「新建 benchmark」弹窗，粘贴题目原文、确认项目名（英文首行标题会自动推荐一个，可改），创建后自动选中新项目并停在 Prompt 页。
 * **命令行**：`pnpm bench new <项目名> [prompt 文件]`，不带文件时依次尝试管道输入和 `--clipboard`（macOS 走 `pbpaste`）。项目名只能用小写字母、数字和单个连字符，重名会直接拒绝。
 
+## 管理组合全集
+
+`benchmarks/catalog.txt` 是厂商 / 模型 / harness 的全集，除了手改文件，也可以在 Studio 里直接管理：
+顶栏的「管理全集」、组合栏标题旁的铅笔图标、快捷键 `M`，或直接访问 `#/catalog`。
+
+* 厂商和模型支持新增、行内重命名（铅笔）、上移 / 下移、删除；harness 以标签形式增删。
+* 校验规则与文件解析共用一份实现（[src/shared/catalog.ts](src/shared/catalog.ts)）：名字只能以字母数字开头、后接 `A-Za-z0-9._-`，同一层不允许重名，模型至少要有一个 harness。
+* 写回时保留文件里的注释、空行、条目顺序和列对齐（[server/catalog-edit.ts](server/catalog-edit.ts)），CRLF / LF 也照原样保留。
+* 每次改动后的提示条里可以「撤销」最近一步；如果文件在这之后又被外部改过，撤销会被拒绝而不是覆盖。
+* **只改清单，不动任何产出目录**：删除 / 重命名有产出的条目会先弹确认，说明会留下多少「孤儿」目录（它们会出现在扫盘警告里，可以之后再处理）。
+* 筛选（搜索、全部 / 有产出 / 未产出）时不能调整顺序，避免看着局部列表误排全局。
+
 ## 数据约定
 
 ```
@@ -100,11 +112,12 @@ catalog.txt、拼装规则与原来一致：页面上的「组合」列完全由
 | `←` / `→` | 切换项目 |
 | `P` / `V` | 切到 Prompt / 预览 |
 | `N` | 打开「新建 benchmark」弹窗（弹窗内 `⌘ ↵` / `Ctrl ↵` 提交） |
+| `M` | 打开「管理组合全集」（管理页内 `N` 新增厂商、`Esc` 返回工作台） |
 | `R` / `S` | 预览页：启动 / 停止当前产出 |
 | `/` | 聚焦筛选框，`Esc` 清空 |
 | `⌘ ↵` / `Ctrl ↵` | 复制完整 Prompt |
 
-地址形如 `#/pelican/gpt/astra/codex?view=preview`，可以收藏，刷新后保持。
+地址形如 `#/pelican/gpt/astra/codex?view=preview`，可以收藏，刷新后保持；管理页是 `#/catalog`。
 
 ## 接口
 
@@ -114,6 +127,8 @@ catalog.txt、拼装规则与原来一致：页面上的「组合」列完全由
 | `GET /api/prompt?project=&family=&model=&harness=` | 纯文本 prompt |
 | `GET /api/reveal?path=` | 在访达中定位（只允许 `benchmarks/` 内的路径） |
 | `POST /api/benchmark/create` | 新建 `benchmarks/<id>/prompt.md`，body `{id, prompt}`；必须带 `X-Bench-Studio: 1` 请求头 |
+| `POST /api/catalog/mutate` | 改 `catalog.txt`，body 是一个操作（增删改名 / 排序 / 改 harness 列表）；返回新的全集和文件原文；必须带 `X-Bench-Studio: 1` 请求头 |
+| `POST /api/catalog/undo` | 撤销最近一次 catalog 改动（文件被外部改过则拒绝）；必须带 `X-Bench-Studio: 1` 请求头 |
 | `GET /api/runs` | 全部运行状态 |
 | `POST /api/run/start?id=` / `POST /api/run/stop?id=` | 启动 / 停止；必须带 `X-Bench-Studio: 1` 请求头 |
 | `GET /api/run/logs?id=&after=` | 增量日志 |

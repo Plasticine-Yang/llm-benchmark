@@ -7,6 +7,8 @@ export type CatalogResult = {
   size: number;
   /** 清单本身写错的地方 */
   problems: string[];
+  /** 清单原文（管理界面展示 / 写回前比对用） */
+  text: string;
 };
 
 /**
@@ -15,12 +17,12 @@ export type CatalogResult = {
  * 每行：<family>/<model>    <harness>[, <harness>...]
  * 以 # 开头为注释。展示顺序沿用文件里的书写顺序。
  */
-export function parseCatalog(path: string): CatalogResult {
+export function parseCatalogText(text: string): CatalogResult {
   const families: CatalogFamily[] = [];
   const problems: string[] = [];
   let size = 0;
 
-  const lines = readFileSync(path, 'utf8').split('\n');
+  const lines = text.split('\n');
   lines.forEach((rawLine, index) => {
     const line = rawLine.trim();
     if (!line || line.startsWith('#')) return;
@@ -67,5 +69,9 @@ export function parseCatalog(path: string): CatalogResult {
 
   if (families.length === 0) problems.push('catalog.txt 里没有解析出任何组合');
 
-  return { catalog: families, size, problems };
+  return { catalog: families, size, problems, text };
+}
+
+export function parseCatalog(path: string): CatalogResult {
+  return parseCatalogText(readFileSync(path, 'utf8'));
 }

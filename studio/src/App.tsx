@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import { CatalogManager } from './components/CatalogManager';
 import { ComboList } from './components/ComboList';
 import type { FilterMode } from './components/ComboList';
 import { CopyButton } from './components/CopyButton';
@@ -10,11 +11,12 @@ import { PreviewPane } from './components/PreviewPane';
 import { PromptDocument } from './components/PromptDocument';
 import { Toast, useToast } from './components/Toast';
 import { TopBar } from './components/TopBar';
+import type { CatalogMutation } from './lib/catalog-api';
 import { writeClipboard } from './lib/clipboard';
 import { catalogKeys, groupCombos } from './lib/combos';
 import type { ComboRow } from './lib/combos';
 import { startRun, stopRun, useRuns } from './lib/runs';
-import { cx, MOD_KEY } from './lib/text';
+import { cx, isTypingTarget, MOD_KEY } from './lib/text';
 import { useTheme } from './lib/theme';
 import { composeForSelection, resolveChoice, selectCombo, TARGET_PLACEHOLDER } from './shared/compose';
 import type { Choice } from './shared/compose';
@@ -77,6 +79,12 @@ function parseHash(): Partial<Choice> | null {
   return partial;
 }
 
+/** #/catalog 是组合全集管理页，不走组合选择。 */
+function isCatalogHash(): boolean {
+  const raw = (window.location.hash.split('?')[0] ?? '').replace(/^#\/?/, '').trim();
+  return raw === 'catalog';
+}
+
 function readStored(): Partial<Choice> | null {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -92,11 +100,6 @@ function readStored(): Partial<Choice> | null {
   }
 }
 
-function isTypingTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
-}
-
 export function App() {
   const [manifest, setManifest] = useState<Manifest | null>(null);
   const [choice, setChoice] = useState<Choice | null>(null);
@@ -104,6 +107,7 @@ export function App() {
   const [loading, setLoading] = useState(true);
   const [reloadToken, setReloadToken] = useState(0);
   const [view, setView] = useState<View>(() => parseView() ?? readStoredView());
+  const [managing, setManaging] = useState(isCatalogHash);
   const [navCollapsed, setNavCollapsed] = useState<boolean>(() => parseNavCollapsed() ?? readNavCollapsed());
   const [theme, toggleTheme] = useTheme();
 
@@ -137,8 +141,12 @@ export function App() {
     return () => controller.abort();
   }, [reloadToken]);
 
-  // 选中的组合同步到 URL hash 与 localStorage，刷新后保持。
+  // 选中的组合同步到 URL hash 与 localStorage，刷新后保持；管理页占用 #/catalog。
   useEffect(() => {
+    if (managing) {
+      if (window.location.hash !== '#/catalog') window.history.replaceState(null, '', '#/catalog');
+      return;
+    }
     if (!choice) return;
     const base = `#/${choice.project}/${choice.family}/${choice.model}/${choice.harness}`;
     const hash = view === 'preview' ? `${base}?view=preview` : base;
@@ -149,14 +157,17 @@ export function App() {
     } catch {
       /* 隐私模式下写不进去，忽略 */
     }
-  }, [choice, view]);
+  }, [choice, view, managing]);
 
   // 支持手工改 hash / 浏览器前进后退。
   useEffect(() => {
     if (!manifest) return;
     const onHashChange = () => {
+      const catalog = isCatalogHash();
+      setManaging(catalog);
       const nextView = parseView();
       if (nextView) setView(nextView);
+      if (catalog) return;
       const wanted = parseHash();
       if (!wanted) return;
       setChoice((prev) => resolveChoice(manifest, wanted) ?? prev);
@@ -166,6 +177,16 @@ export function App() {
   }, [manifest]);
 
   const rescan = useCallback(() => setReloadToken((token) => token + 1), []);
+
+  /** catalog 编辑成功：先用返回值即时更新全集，再重新扫盘刷新覆盖与警告。 */
+  const applyCatalog = useCallback((result: CatalogMutation) => {
+    setManifest((prev) =>
+      prev
+        ? { ...prev, catalog: result.catalog, catalogSize: result.catalogSize, catalogText: result.text }
+        : prev,
+    );
+    setReloadToken((token) => token + 1);
+  }, []);
 
   /** 新建 benchmark 后：记下要选中的项目，重新扫盘，扫完由 resolveChoice 选中它。 */
   const openProject = useCallback((project: string) => {
@@ -180,8 +201,10 @@ export function App() {
         manifest={manifest}
         loading={loading}
         theme={theme}
+        managing={managing}
         onToggleTheme={toggleTheme}
         onRescan={rescan}
+        onToggleCatalog={() => setManaging((value) => !value)}
       />
 
       {error && (
@@ -193,7 +216,10 @@ export function App() {
         </State>
       )}
       {!error && !manifest && <State tone="loading" title="正在扫描 benchmarks/ …" />}
-      {manifest && choice && (
+      {manifest && managing && (
+        <CatalogManager manifest={manifest} onCatalogChange={applyCatalog} onExit={() => setManaging(false)} />
+      )}
+      {manifest && !managing && choice && (
         <Studio
           manifest={manifest}
           choice={choice}
@@ -201,16 +227,22 @@ export function App() {
           view={view}
           onView={setView}
           onOpenProject={openProject}
+          onManage={() => setManaging(true)}
           navCollapsed={navCollapsed}
           onToggleNav={() => setNavCollapsed((value) => !value)}
         />
       )}
-      {manifest && !choice && (
+      {manifest && !managing && !choice && (
         <State
           tone="error"
           title="没有可用的组合"
           detail="benchmarks/catalog.txt 里没有可用的组合，或 benchmarks/ 下没有带 prompt.md 的项目。"
-        />
+        >
+          <button type="button" className="btn" onClick={() => setManaging(true)}>
+            <Icon name="layers" size={14} />
+            <span className="btn-label">管理组合全集</span>
+          </button>
+        </State>
       )}
     </div>
   );
@@ -289,6 +321,7 @@ function Studio({
   view,
   onView,
   onOpenProject,
+  onManage,
   navCollapsed,
   onToggleNav,
 }: {
@@ -298,6 +331,8 @@ function Studio({
   view: View;
   onView: (view: View) => void;
   onOpenProject: (project: string) => void;
+  /** 打开组合全集管理页 */
+  onManage: () => void;
   navCollapsed: boolean;
   onToggleNav: () => void;
 }) {
@@ -465,6 +500,12 @@ function Studio({
         return;
       }
 
+      if (event.key === 'm') {
+        event.preventDefault();
+        onManage();
+        return;
+      }
+
       if (event.key === 'p' || event.key === 'v') {
         event.preventDefault();
         onView(event.key === 'p' ? 'prompt' : 'preview');
@@ -503,7 +544,7 @@ function Studio({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [copyFull, visibleRows, activeKey, pickRow, pick, manifest, projectIndex, onView, view, launch, run, runAction]);
+  }, [copyFull, visibleRows, activeKey, pickRow, pick, manifest, projectIndex, onView, view, launch, run, runAction, onManage]);
 
   const reveal = useCallback(() => {
     if (!selection) return;
@@ -542,6 +583,7 @@ function Studio({
           onMode={setMode}
           searchRef={searchRef}
           onPick={pickRow}
+          onManage={onManage}
           launch={benchmark?.launch ?? {}}
           runs={runs}
           project={choice.project}

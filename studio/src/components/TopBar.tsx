@@ -8,8 +8,11 @@ type Props = {
   manifest: Manifest | null;
   loading: boolean;
   theme: Theme;
+  /** 当前是否在组合全集管理页 */
+  managing: boolean;
   onToggleTheme: () => void;
   onRescan: () => void;
+  onToggleCatalog: () => void;
 };
 
 /** 品牌标：两条横杠 = 「题目 prompt」+「shared-prompt」拼在一起。 */
@@ -63,7 +66,7 @@ function Warnings({ list }: { list: string[] }) {
   );
 }
 
-export function TopBar({ manifest, loading, theme, onToggleTheme, onRescan }: Props) {
+export function TopBar({ manifest, loading, theme, managing, onToggleTheme, onRescan, onToggleCatalog }: Props) {
   const repoName = manifest?.repoRoot.split('/').filter(Boolean).pop();
   const scanned = manifest
     ? new Date(manifest.scannedAt).toLocaleTimeString('zh-CN', { hour12: false })
@@ -93,6 +96,17 @@ export function TopBar({ manifest, loading, theme, onToggleTheme, onRescan }: Pr
             扫描于 {scanned}
           </span>
         )}
+        <button
+          type="button"
+          className={cx('btn btn-sm topbar-catalog', managing && 'is-active')}
+          onClick={onToggleCatalog}
+          disabled={!manifest}
+          title={managing ? '返回工作台（Esc）' : '管理厂商 / 模型 / harness（M）'}
+          aria-pressed={managing}
+        >
+          <Icon name="layers" size={14} />
+          <span className="topbar-catalog-label">{managing ? '返回工作台' : '管理全集'}</span>
+        </button>
         <button
           type="button"
           className={cx('icon-btn', loading && 'is-spinning')}

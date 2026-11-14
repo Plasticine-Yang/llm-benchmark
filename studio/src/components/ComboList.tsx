@@ -21,6 +21,8 @@ type Props = {
   onMode: (mode: FilterMode) => void;
   searchRef: RefObject<HTMLInputElement | null>;
   onPick: (row: ComboRow) => void;
+  /** 打开组合全集管理页 */
+  onManage: () => void;
   /** 当前项目各产出的启动规范 */
   launch: Record<string, LaunchInfo>;
   /** 全部运行状态，键是 <project>/<family>/<model>/<harness> */
@@ -63,6 +65,7 @@ export function ComboList({
   onMode,
   searchRef,
   onPick,
+  onManage,
   launch,
   runs,
   project,
@@ -88,6 +91,15 @@ export function ComboList({
       <header className="combos-head">
         <h2 className="combos-title">组合</h2>
         <span className="combos-sub">厂商 / 模型 / Harness</span>
+        <button
+          type="button"
+          className="icon-btn combos-manage"
+          onClick={onManage}
+          title="管理组合全集：厂商 / 模型 / harness（M）"
+          aria-label="管理组合全集"
+        >
+          <Icon name="pencil" size={13} />
+        </button>
       </header>
 
       <div className="combo-tools">

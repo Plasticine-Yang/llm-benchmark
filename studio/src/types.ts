@@ -45,6 +45,8 @@ export type Manifest = {
   catalog: CatalogFamily[];
   /** 全集条目总数（各项目产出数不会超过它） */
   catalogSize: number;
+  /** catalog.txt 原文，管理界面展示用 */
+  catalogText: string;
   benchmarks: Benchmark[];
   /** 不符合约定的目录，UI 里会提示 */
   warnings: string[];

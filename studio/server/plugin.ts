@@ -4,6 +4,8 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { extname, join, resolve, sep } from 'node:path';
 import type { Connect, Plugin } from 'vite';
 import { composeForSelection, selectCombo } from '../src/shared/compose.ts';
+import { parseCatalogOp } from '../src/shared/catalog.ts';
+import { mutateCatalog, undoCatalog } from './catalog-edit.ts';
 import { createBenchmark } from './create.ts';
 import { findRepoRoot } from './paths.ts';
 import { Runner } from './runner.ts';
@@ -179,6 +181,8 @@ function servePreview(rawUrl: string, res: ServerResponse, repoRoot: string) {
  *   GET  /api/prompt?project&family&model&harness       文字版 prompt
  *   GET  /api/reveal?path                               在访达里定位产出目录
  *   POST /api/benchmark/create   {id, prompt}           新建 benchmarks/<id>/prompt.md
+ *   POST /api/catalog/mutate     CatalogOp              编辑 catalog.txt（保留注释与顺序）
+ *   POST /api/catalog/undo                              撤销上一次 catalog 编辑
  *   GET  /api/runs                                      全部运行状态
  *   POST /api/run/start?id                              按 bench.json 启动
  *   POST /api/run/stop?id                               停止
@@ -257,6 +261,47 @@ export function benchStudioPlugin(): Plugin {
           sendJson(res, 400, { error: error instanceof Error ? error.message : String(error) });
         }
       })();
+    });
+
+    middlewares.use('/api/catalog/mutate', (req, res) => {
+      if (!isStudioWrite(req, res)) return;
+      void (async () => {
+        try {
+          const op = parseCatalogOp(await readJsonBody(req));
+          if (!op) {
+            sendJson(res, 400, { error: '未知的 catalog 操作' });
+            return;
+          }
+          const result = mutateCatalog(repoRoot, op);
+          if (!result.ok) {
+            sendJson(res, 400, { error: result.error });
+            return;
+          }
+          sendJson(res, 200, {
+            catalog: result.catalog,
+            catalogSize: result.catalogSize,
+            problems: result.problems,
+            text: result.text,
+          });
+        } catch (error) {
+          sendJson(res, 400, { error: error instanceof Error ? error.message : String(error) });
+        }
+      })();
+    });
+
+    middlewares.use('/api/catalog/undo', (req, res) => {
+      if (!isStudioWrite(req, res)) return;
+      const result = undoCatalog(repoRoot);
+      if (!result.ok) {
+        sendJson(res, 409, { error: result.error });
+        return;
+      }
+      sendJson(res, 200, {
+        catalog: result.catalog,
+        catalogSize: result.catalogSize,
+        problems: result.problems,
+        text: result.text,
+      });
     });
 
     middlewares.use('/api/runs', (_req, res) => sendJson(res, 200, runner.list()));
