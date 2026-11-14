@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "kind": "static",
+  "entry": "index.html",
+  "notes": "纯静态页面：index.html 相对引入 style.css 与 game.js（经典脚本），无后端、无构建。"
+}

@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#2b2a63">
+<meta name="description" content="Pelican Pedal - a sunset snack run. One pelican, one bicycle, zero helmets.">
+<title>Pelican Pedal — Sunset Snack Run</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <canvas id="game" aria-label="Pelican Pedal game"></canvas>
+
+  <div id="ui">
+    <div id="controls">
+      <button id="btnPause" class="icon-btn hidden" aria-label="Pause" title="Pause (P)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="4" width="4.5" height="16" rx="1.6"/><rect x="14" y="4" width="4.5" height="16" rx="1.6"/></svg>
+      </button>
+      <button id="btnSound" class="icon-btn" aria-label="Toggle sound" title="Mute (M)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 4V5L7 9H3z" stroke="none"/><path class="wave" d="M16 9c1.3 1.7 1.3 4.3 0 6"/><path class="wave" d="M18.6 6.4c2.6 3.1 2.6 8.1 0 11.2"/></svg>
+      </button>
+    </div>
+
+    <!-- START SCREEN -->
+    <section id="screenMenu" class="screen">
+      <div class="panel menu-panel">
+        <div class="brand">
+          <div class="emblem">
+            <svg viewBox="0 0 120 120" aria-hidden="true">
+              <circle cx="60" cy="60" r="56" fill="#ffc94a" stroke="#1e2b46" stroke-width="4"/>
+              <path d="M6 80 Q60 54 114 80" fill="none" stroke="#1fa89b" stroke-width="5" stroke-linecap="round"/>
+              <circle cx="38" cy="93" r="10" fill="#fff6e6" stroke="#1e2b46" stroke-width="4"/>
+              <circle cx="84" cy="93" r="10" fill="#fff6e6" stroke="#1e2b46" stroke-width="4"/>
+              <path d="M38 93 L55 72 L72 72 L84 93" fill="none" stroke="#1e2b46" stroke-width="4" stroke-linejoin="round"/>
+              <path d="M46 64 Q43 34 62 30 Q79 27 81 45 L81 55 Q65 64 46 64 Z" fill="#fff6e6" stroke="#1e2b46" stroke-width="3" stroke-linejoin="round"/>
+              <path d="M79 40 L109 46 L79 55 Z" fill="#ff7355" stroke="#1e2b46" stroke-width="3" stroke-linejoin="round"/>
+              <circle cx="68" cy="42" r="3.6" fill="#1e2b46"/>
+              <path d="M44 34 Q60 21 77 32" fill="none" stroke="#1fa89b" stroke-width="7" stroke-linecap="round"/>
+              <path d="M46 63 Q62 68 81 55" fill="none" stroke="#1e2b46" stroke-width="2.6"/>
+            </svg>
+          </div>
+          <div class="brand-text">
+            <div class="eyebrow">A SUNSET SNACK RUN</div>
+            <h1>PELICAN<span>PEDAL</span></h1>
+          </div>
+        </div>
+
+        <p class="tagline">Pedal hard. Snatch sardines. Dodge the grumpy crabs.<br>One pelican, one bicycle, zero helmets.</p>
+
+        <div class="chips">
+          <div class="chip"><span class="kbd">SPACE</span><span class="slash">/</span><span class="kbd">TAP</span><b>HOP</b></div>
+          <div class="chip"><span class="kbd">TAP AGAIN</span><b>WING FLAP</b></div>
+          <div class="chip"><span class="dot gold"></span><b>FISH = COMBO</b></div>
+          <div class="chip"><span class="dot coral"></span><b>DODGE CRABS &amp; GULLS</b></div>
+        </div>
+
+        <button id="btnStart" class="btn btn-primary">START RIDING <span>&rarr;</span></button>
+
+        <div class="hs-wrap">
+          <div class="hs-title"><span>LOCAL BEST RIDES</span><span>TOP 6</span></div>
+          <div class="hs-list" data-highs></div>
+        </div>
+        <div class="foot">P / ESC pause &nbsp;·&nbsp; M mute &nbsp;·&nbsp; bests saved on this device</div>
+      </div>
+    </section>
+
+    <!-- PAUSE SCREEN -->
+    <section id="screenPause" class="screen hidden">
+      <div class="panel pause-panel">
+        <div class="eyebrow">WHEELS ON HOLD</div>
+        <h2>TAKE A<br>BREATHER</h2>
+        <p class="tagline">The fish will wait. Probably.</p>
+        <button id="btnResume" class="btn btn-primary">RESUME <span>&rarr;</span></button>
+        <div class="btn-row">
+          <button id="btnRestart" class="btn btn-ghost">RESTART</button>
+          <button id="btnMenu" class="btn btn-ghost">MAIN MENU</button>
+        </div>
+        <div class="foot">SPACE / P / ESC to resume</div>
+      </div>
+    </section>
+
+    <!-- GAME OVER SCREEN -->
+    <section id="screenOver" class="screen hidden">
+      <div class="panel over-panel">
+        <div id="recordBadge" class="badge hidden">NEW PERSONAL BEST</div>
+        <div class="eyebrow">THE FISH GOT AWAY</div>
+        <h2>RIDE OVER</h2>
+        <div class="final-score"><span id="finalScore">0</span><small>POINTS</small></div>
+
+        <div class="stats">
+          <div><b id="statFish">0</b><span>FISH</span></div>
+          <div><b id="statCombo">x1</b><span>BEST COMBO</span></div>
+          <div><b id="statDist">0m</b><span>DISTANCE</span></div>
+          <div><b id="statBest">0</b><span>ALL-TIME BEST</span></div>
+        </div>
+
+        <div id="nameRow" class="name-row hidden">
+          <label for="nameInput">TOP 6! CLAIM YOUR SPOT</label>
+          <div class="name-input">
+            <input id="nameInput" type="text" maxlength="10" spellcheck="false" autocomplete="off" placeholder="YOUR NAME">
+            <button id="btnSave" class="btn btn-small">SAVE</button>
+          </div>
+        </div>
+        <div id="savedNote" class="saved hidden">SAVED — NICE RIDE!</div>
+        <div id="missNote" class="miss hidden">So close. Crack the top 6 next time.</div>
+
+        <div class="hs-wrap">
+          <div class="hs-title"><span>LOCAL BEST RIDES</span><span>TOP 6</span></div>
+          <div class="hs-list" id="overHighs"></div>
+        </div>
+
+        <button id="btnAgain" class="btn btn-primary">RIDE AGAIN <span>&#8635;</span></button>
+        <div class="foot">SPACE / TAP to restart instantly</div>
+      </div>
+    </section>
+  </div>
+</div>
+<script src="game.js"></script>
+</body>
+</html>
