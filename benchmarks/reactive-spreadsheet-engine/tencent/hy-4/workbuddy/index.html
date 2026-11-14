@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reactive Spreadsheet Engine</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark">∑</span>
+          <div>
+            <h1>Reactive Spreadsheet Engine</h1>
+            <p>手写公式引擎 · 真实依赖图 · 增量重算 · 循环检测</p>
+          </div>
+        </div>
+        <div class="topbar-badges">
+          <span class="badge" id="badge-grid">30 × 12</span>
+          <span class="badge badge-soft">A1 : L30</span>
+          <span class="badge badge-soft">SUM / AVG / 算术</span>
+        </div>
+      </header>
+
+      <div class="toolbar">
+        <button id="btn-undo" class="btn" title="撤销 (Ctrl+Z)">↶ 撤销</button>
+        <button id="btn-redo" class="btn" title="重做 (Ctrl+Y)">↷ 重做</button>
+        <span class="toolbar-sep"></span>
+        <label class="switch" title="在网格里直接查看原始公式">
+          <input type="checkbox" id="toggle-formulas" />
+          <span>显示原始公式</span>
+        </label>
+        <span class="toolbar-sep"></span>
+        <button id="btn-demo" class="btn">载入示例</button>
+        <button id="btn-cycle" class="btn btn-warn">演示：间接循环</button>
+        <button id="btn-clear" class="btn btn-danger">清空</button>
+        <span class="toolbar-sep"></span>
+        <button id="btn-save" class="btn">立即保存</button>
+        <div class="toolbar-spacer"></div>
+        <div id="save-status" class="save-status">连接中…</div>
+      </div>
+
+      <div class="formula-bar">
+        <div class="cell-ref" id="active-cell">A1</div>
+        <div class="fx">fx</div>
+        <input id="formula-input" type="text" autocomplete="off" spellcheck="false"
+               placeholder="输入文本、数字或以 = 开头的公式，回车提交" />
+        <div class="formula-hint">Enter 提交 · Esc 取消 · 单元格内 Enter 编辑</div>
+      </div>
+
+      <div class="workspace">
+        <main class="grid-panel">
+          <div id="grid-scroll" class="grid-scroll" tabindex="0" aria-label="电子表格网格">
+            <table id="grid" class="grid"><!-- built by main.js --></table>
+          </div>
+        </main>
+
+        <aside class="inspector">
+          <section class="panel">
+            <h2>单元格检视 <span class="panel-tag" id="inspect-tag">A1</span></h2>
+            <div class="kv"><span>类型</span><strong id="inspect-type">空</strong></div>
+            <div class="kv"><span>原始内容</span><code id="inspect-raw">（空）</code></div>
+            <div class="kv"><span>计算结果</span><strong id="inspect-value">（空）</strong></div>
+            <div class="kv"><span>错误</span><strong id="inspect-error">—</strong></div>
+          </section>
+
+          <section class="panel">
+            <h2>依赖关系图</h2>
+            <div class="legend">
+              <span><i class="swatch swatch-prec"></i>引用（上游）</span>
+              <span><i class="swatch swatch-dep"></i>被依赖（下游）</span>
+            </div>
+            <div id="dep-map" class="dep-map"></div>
+            <p class="hint">实线边框 = 直接关系；虚线边框 = 间接（传递）关系。点击列表中的单元格可跳转。</p>
+            <div class="dep-lists">
+              <div>
+                <h3>直接引用 <span id="prec-count" class="count">0</span></h3>
+                <div id="prec-list" class="chip-list"></div>
+              </div>
+              <div>
+                <h3>被依赖（含传递） <span id="dep-count" class="count">0</span></h3>
+                <div id="dep-list" class="chip-list"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h2>公式清单 <span class="panel-tag" id="formula-count">0</span></h2>
+            <div class="table-wrap">
+              <table class="formula-table">
+                <thead><tr><th>单元格</th><th>原始公式</th><th>结果</th></tr></thead>
+                <tbody id="formula-rows"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h2>增量重算日志</h2>
+            <div id="recalc-log" class="recalc-log">尚未编辑</div>
+          </section>
+        </aside>
+      </div>
+
+      <footer class="statusbar">
+        <span id="stat-cells">单元格 0</span>
+        <span id="stat-formulas">公式 0</span>
+        <span id="stat-errors">错误 0</span>
+        <span id="stat-recalc">上次重算 —</span>
+        <span class="statusbar-spacer"></span>
+        <span id="stat-verify">持久化校验 —</span>
+      </footer>
+    </div>
+
+    <div id="toast" class="toast"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
