@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Multi-Robot Warehouse Scheduling System</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">MR</div>
+      <div>
+        <h1>Multi-Robot Warehouse Scheduling</h1>
+        <p>Space-time A* &middot; reservation table &middot; live SSE &middot; authoritative backend</p>
+      </div>
+    </div>
+    <div class="status-strip">
+      <div class="chip"><span>Tick</span><b id="tick">—</b></div>
+      <div class="chip"><span>Seq</span><b id="seq">—</b></div>
+      <div class="chip"><span>Seed</span><b id="seed">—</b></div>
+      <div class="chip"><span>Jobs done</span><b id="done">—</b></div>
+      <div class="chip status-chip"><span>Stream</span><b id="conn" class="dot-wait">connecting</b></div>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="toolbar-group">
+      <button id="btn-pause" class="btn primary">Pause</button>
+      <button id="btn-step" class="btn">Single step</button>
+      <button id="btn-reset" class="btn danger">Reset (same seed)</button>
+    </div>
+    <div class="toolbar-group">
+      <span class="toolbar-label">Speed</span>
+      <button class="btn speed" data-ms="640">0.5&times;</button>
+      <button class="btn speed active" data-ms="320">1&times;</button>
+      <button class="btn speed" data-ms="160">2&times;</button>
+    </div>
+    <div class="toolbar-group">
+      <button id="btn-demo" class="btn accent">+ 3 demo jobs</button>
+      <button id="btn-block-ahead" class="btn">Block ahead of</button>
+      <select id="block-robot" class="select small"></select>
+      <button id="btn-disconnect" class="btn warn">Disconnect</button>
+      <button id="btn-reconnect" class="btn">Reconnect</button>
+    </div>
+  </div>
+
+  <main class="layout">
+    <section class="card map-card">
+      <div class="card-head">
+        <h2>Warehouse map</h2>
+        <div class="legend">
+          <span><i class="sw sw-shelf"></i>Shelf</span>
+          <span><i class="sw sw-station"></i>Workstation</span>
+          <span><i class="sw sw-home"></i>Home</span>
+          <span><i class="sw sw-aisle"></i>1-wide aisle</span>
+          <span><i class="sw sw-block"></i>Blocked</span>
+          <span><i class="sw sw-route"></i>Planned route</span>
+        </div>
+      </div>
+      <div class="map-wrap" id="map-wrap">
+        <canvas id="map" aria-label="warehouse grid"></canvas>
+        <div class="map-tip" id="map-tip"></div>
+      </div>
+      <p class="hint">Click any traversable cell to block / unblock it while the simulation runs. Robots stop before the new obstacle and replan immediately. Dashed lines are the backend-computed reserved routes.</p>
+    </section>
+
+    <aside class="side">
+      <section class="card">
+        <div class="card-head"><h2>Create transport job</h2></div>
+        <form id="job-form" class="form">
+          <label>Shelf
+            <select id="job-shelf" class="select"></select>
+          </label>
+          <label>Destination workstation
+            <select id="job-station" class="select"></select>
+          </label>
+          <label>Priority
+            <select id="job-priority" class="select">
+              <option value="5">5 &mdash; Urgent</option>
+              <option value="4">4 &mdash; High</option>
+              <option value="3" selected>3 &mdash; Medium</option>
+              <option value="2">2 &mdash; Normal</option>
+              <option value="1">1 &mdash; Low</option>
+            </select>
+          </label>
+          <button type="submit" class="btn accent full">Create job &amp; auto-assign robot</button>
+        </form>
+      </section>
+
+      <section class="card grow">
+        <div class="card-head"><h2>Job queue</h2><span class="muted" id="job-count"></span></div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Job</th><th>Route</th><th>P</th><th>Status</th><th>Robot</th><th>Age</th></tr></thead>
+            <tbody id="jobs-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </aside>
+
+    <section class="card robots-card">
+      <div class="card-head"><h2>Robot states &amp; wait reasons</h2><span class="muted">positions come from the backend only</span></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Robot</th><th>Pos</th><th>Phase</th><th>Job</th><th>Next / reason for waiting</th><th>Route</th><th>Waited</th></tr></thead>
+          <tbody id="robots-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card events-card">
+      <div class="card-head"><h2>Event log</h2><span class="muted" id="event-count"></span></div>
+      <div class="event-list" id="events"></div>
+      <div class="card-head sub"><h3>Stream consistency</h3><span class="muted" id="watermark"></span></div>
+      <div class="event-list short" id="stream-log"></div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>

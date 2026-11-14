@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "kind": "process",
+  "setup": [{ "run": "node scripts/build.js", "unless": "dist/index.html" }],
+  "start": "node server/index.js",
+  "notes": "零依赖 node 服务（Node 18+ 内置模块），读 PORT，单端口同时提供页面、REST 和 SSE；dist/index.html 存在时托管 dist/，否则退回 public/，所以 setup 只在缺产物时跑一次零依赖构建。"
+}
