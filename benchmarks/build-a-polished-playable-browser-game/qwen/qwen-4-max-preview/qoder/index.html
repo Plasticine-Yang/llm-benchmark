@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#1B0F33">
+<meta name="description" content="Pelican Pedal — 一只鹈鹕骑着自行车穿越落日海滨。跳跃、扑翼、俯冲、加速，收集鲜鱼，冲击本地最高分。">
+<title>PELICAN PEDAL · 鹈鹕骑行</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>&#128690;</text></svg>">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+  <canvas id="stage" aria-label="Pelican Pedal game canvas" role="img"></canvas>
+
+  <!-- ============ HUD ============ -->
+  <div id="hud" class="hud" aria-hidden="true">
+    <div class="hud-row hud-top">
+      <div class="hud-block">
+        <div class="hud-label">SCORE</div>
+        <div id="score" class="hud-score">0</div>
+        <div class="hud-sub"><span id="dist">0</span> m<span class="dot"></span>BEST <span id="hudBest">0</span></div>
+      </div>
+
+      <div class="hud-center">
+        <div id="combo" class="combo" data-on="0">
+          <span id="mult">×1</span>
+          <div class="combo-track"><i id="comboFill"></i></div>
+        </div>
+        <div id="lives" class="lives"></div>
+      </div>
+
+      <div class="hud-block hud-right">
+        <button id="btnSound" class="icon-btn" type="button" title="声音 (M)" aria-label="Toggle sound">
+          <svg viewBox="0 0 24 24" class="ico"><path class="spk" d="M4 9.5h3.6L12 5.6v12.8L7.6 14.5H4z"/><path class="wav" d="M15.4 9a4.2 4.2 0 0 1 0 6M18 6.6a7.6 7.6 0 0 1 0 10.8"/><path class="mut" d="M15.6 9.6l5 4.8M20.6 9.6l-5 4.8"/></svg>
+        </button>
+        <button id="btnPause" class="icon-btn" type="button" title="暂停 (P / Esc)" aria-label="Pause">
+          <svg viewBox="0 0 24 24" class="ico"><path class="pau" d="M9 5.5v13M15 5.5v13"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="hud-row hud-bottom">
+      <button id="btnBoost" class="boost" type="button" data-ready="0" aria-label="Tailwind boost">
+        <div class="boost-track"><i id="boostFill"></i></div>
+        <div class="boost-face">
+          <svg viewBox="0 0 24 24" class="ico"><path d="M13.4 2.5L4.8 13.2h5.3l-.9 8.3 8.9-11.1h-5.6z"/></svg>
+          <span>TAILWIND</span><kbd>Shift</kbd>
+        </div>
+      </button>
+      <div id="speedo" class="speedo"><i id="speedFill"></i><span id="speedTxt">0 km/h</span></div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+  </div>
+
+  <!-- ============ TOUCH PADS ============ -->
+  <div id="touch" class="touch" aria-hidden="true">
+    <button id="padDuck" class="pad pad-duck" type="button" aria-label="Duck / slam">
+      <svg viewBox="0 0 24 24" class="ico"><path d="M12 4v13M6.5 12.2L12 17.8l5.5-5.6"/></svg>
+      <span>DUCK</span>
+    </button>
+    <button id="padJump" class="pad pad-jump" type="button" aria-label="Jump / flap">
+      <svg viewBox="0 0 24 24" class="ico"><path d="M12 20V7M6.5 11.8L12 6.2l5.5 5.6"/></svg>
+      <span>JUMP</span>
+    </button>
+  </div>
+
+  <!-- ============ MENU ============ -->
+  <section id="menu" class="overlay show" data-screen="menu">
+    <div class="menu-grid">
+      <div class="menu-main">
+        <div class="eyebrow"><i></i>SUNSET BOARDWORKS · 落日海滨</div>
+        <h1 class="title"><span class="t1">PELICAN</span><span class="t2">PEDAL</span></h1>
+        <p class="tagline">一只鹈鹕，一辆自行车，一条永远骑不完的海滨栈道。<br>
+          跳过螃蟹、低头躲海鸥、俯冲砸场，把整片海的鱼都装进喉囊。</p>
+
+        <div class="diff" role="group" aria-label="Difficulty">
+          <button class="diff-btn" data-diff="chill" type="button"><b>CHILL</b><small>悠闲 · 5 羽</small></button>
+          <button class="diff-btn on" data-diff="classic" type="button"><b>CLASSIC</b><small>经典 · 3 羽</small></button>
+          <button class="diff-btn" data-diff="turbo" type="button"><b>TURBO</b><small>狂飙 · 2 羽</small></button>
+        </div>
+
+        <div class="cta-row">
+          <button id="btnPlay" class="btn btn-primary" type="button"><span>RIDE</span><kbd>Space</kbd></button>
+          <button id="btnScores" class="btn btn-ghost" type="button">排行榜</button>
+        </div>
+
+        <div class="keys">
+          <div class="key"><kbd>Space</kbd><kbd>↑</kbd><span>跳跃 · 再按一次<b>扑翼</b>二段跳</span></div>
+          <div class="key"><kbd>↓</kbd><kbd>S</kbd><span>地面<b>下蹲</b>躲海鸥 · 空中<b>俯冲</b>砸螃蟹</span></div>
+          <div class="key"><kbd>Shift</kbd><span>喉囊满时释放<b>顺风冲刺</b>，撞碎一切</span></div>
+          <div class="key"><kbd>P</kbd><kbd>R</kbd><kbd>M</kbd><span>暂停 · 重开 · 静音</span></div>
+          <div class="key touch-only"><kbd>触摸</kbd><span>左半屏下蹲，右半屏跳跃，底部按钮冲刺</span></div>
+        </div>
+      </div>
+
+      <aside class="menu-side">
+        <div class="panel best-panel">
+          <div class="panel-head"><h2>HALL OF FEATHERS</h2><span class="panel-sub">本地最高分</span></div>
+          <ol id="menuScores" class="score-list compact"></ol>
+        </div>
+        <div class="panel tip-panel">
+          <div class="panel-head"><h2>FIELD NOTES</h2><span class="panel-sub">骑手须知</span></div>
+          <ul class="tips">
+            <li><i class="sw sw-fish"></i>连吃 6 条鱼提升一档倍率，最高 <b>×8</b>。</li>
+            <li><i class="sw sw-ramp"></i>冲上跳台后长按跳跃键，滞空越久落地奖励越高。</li>
+            <li><i class="sw sw-crab"></i>空中按下俯冲，落地产生的冲击波会震碎附近障碍。</li>
+            <li><i class="sw sw-gold"></i>金色飞鱼值 100 分，还会瞬间补满喉囊。</li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+    <footer class="menu-foot">CANVAS 2D · 60 FPS · 无外部资源 · 进度保存在本机
+      <span class="rotate-inline">横屏骑行视野更开阔 · rotate for a wider view</span>
+    </footer>
+  </section>
+
+  <!-- ============ PAUSE ============ -->
+  <section id="pause" class="overlay" data-screen="pause">
+    <div class="card card-pause">
+      <div class="card-kicker">INTERMISSION</div>
+      <h2 class="card-title">暂停中</h2>
+      <div class="stat-strip">
+        <div><b id="pScore">0</b><span>SCORE</span></div>
+        <div><b id="pDist">0</b><span>METRES</span></div>
+        <div><b id="pMult">×1</b><span>COMBO</span></div>
+      </div>
+      <div class="btn-col">
+        <button id="btnResume" class="btn btn-primary" type="button"><span>继续骑行</span><kbd>P</kbd></button>
+        <button id="btnRestartP" class="btn btn-ghost" type="button">重新开始<kbd>R</kbd></button>
+        <button id="btnQuit" class="btn btn-quiet" type="button">返回主菜单</button>
+      </div>
+      <label class="sound-line"><input id="chkSound" type="checkbox" checked><span>声音与音乐</span></label>
+    </div>
+  </section>
+
+  <!-- ============ GAME OVER ============ -->
+  <section id="over" class="overlay" data-screen="over">
+    <div class="card card-over">
+      <div id="recordRibbon" class="ribbon">NEW PERSONAL BEST · 新纪录</div>
+      <div class="card-kicker">WIPEOUT</div>
+      <h2 class="card-title" id="overTitle">翻车了！</h2>
+      <div class="final-score"><span>FINAL SCORE</span><b id="oScore">0</b></div>
+      <div class="stat-strip four">
+        <div><b id="oDist">0</b><span>METRES</span></div>
+        <div><b id="oFish">0</b><span>FISH</span></div>
+        <div><b id="oMult">×1</b><span>BEST COMBO</span></div>
+        <div><b id="oAir">0.0s</b><span>BIGGEST AIR</span></div>
+      </div>
+      <div id="nameRow" class="name-row">
+        <label for="nameInput">刻上排行榜</label>
+        <input id="nameInput" maxlength="10" autocomplete="off" spellcheck="false" placeholder="骑手名">
+        <button id="btnSaveScore" class="btn btn-small" type="button">保存</button>
+      </div>
+      <div id="savedNote" class="saved-note"></div>
+      <div class="btn-row">
+        <button id="btnAgain" class="btn btn-primary" type="button"><span>再来一次</span><kbd>R</kbd></button>
+        <button id="btnMenu" class="btn btn-ghost" type="button">主菜单</button>
+      </div>
+      <div class="panel over-scores">
+        <div class="panel-head"><h2>HALL OF FEATHERS</h2><span class="panel-sub">本地最高分</span></div>
+        <ol id="overScores" class="score-list compact"></ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SCORES ============ -->
+  <section id="scores" class="overlay" data-screen="scores">
+    <div class="card card-scores">
+      <div class="card-kicker">LOCAL LEADERBOARD</div>
+      <h2 class="card-title">HALL OF FEATHERS</h2>
+      <ol id="fullScores" class="score-list"></ol>
+      <div class="btn-row">
+        <button id="btnScoresBack" class="btn btn-primary" type="button"><span>返回</span><kbd>Esc</kbd></button>
+        <button id="btnClear" class="btn btn-quiet" type="button">清空记录</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script defer src="js/util.js"></script>
+<script defer src="js/audio.js"></script>
+<script defer src="js/scenery.js"></script>
+<script defer src="js/actors.js"></script>
+<script defer src="js/game.js"></script>
+<script defer src="js/main.js"></script>
+</body>
+</html>

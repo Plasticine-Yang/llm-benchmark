@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "kind": "static",
+  "entry": "index.html",
+  "notes": "纯静态页面：index.html 用相对路径引入 styles.css 与 js/ 下的经典脚本（defer，非模块），无后端、无构建。"
+}
