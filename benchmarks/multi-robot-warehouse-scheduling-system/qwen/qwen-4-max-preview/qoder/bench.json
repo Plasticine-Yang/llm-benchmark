@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "kind": "process",
+  "setup": [
+    { "run": "npm --prefix server ci", "unless": "server/node_modules" },
+    { "run": "npm --prefix client ci", "unless": "client/node_modules" },
+    { "run": "npm run build", "unless": "client/dist/index.html" }
+  ],
+  "start": "node server/src/index.js",
+  "notes": "生产模式单端口：server/src/index.js 读 PORT，托管 client/dist 并在同一端口提供 /api 与 /ws，客户端没有写死 8787，所以不用 npm run dev 那套双进程。server 与 client 各有 package-lock.json，分别 npm ci。"
+}
