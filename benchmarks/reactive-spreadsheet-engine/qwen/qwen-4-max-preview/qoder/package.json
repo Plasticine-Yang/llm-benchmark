@@ -1,0 +1,24 @@
+{
+  "name": "reactive-spreadsheet-engine",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Compact reactive spreadsheet with a hand-written formula engine, dependency graph and a Node persistence backend.",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:server": "node server/index.mjs",
+    "dev:client": "vite",
+    "build": "vite build",
+    "start": "node server/index.mjs",
+    "preview": "npm run build && node server/index.mjs",
+    "test": "node --test shared/engine/engine.test.mjs"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^5.4.11"
+  }
+}

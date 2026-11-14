@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "kind": "process",
+  "setup": [
+    { "run": "npm ci", "unless": "node_modules" },
+    { "run": "npm run build", "unless": "dist/index.html" }
+  ],
+  "start": "node server/index.mjs",
+  "notes": "生产模式单端口：server/index.mjs 读 PORT（默认 4310）与 HOST，同时提供 /api 和 dist/ 静态页面，不需要 vite dev 那条写死 4310 代理的双进程链路。"
+}
