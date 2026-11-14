@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "kind": "static",
+  "entry": "index.html",
+  "notes": "Three.js 雨夜便利店微缩景观；three.min.js 与 core/world/props/fx.js 都在目录内，用相对路径 script 引入，无构建、无后端。"
+}
