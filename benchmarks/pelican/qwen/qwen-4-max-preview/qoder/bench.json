@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "kind": "static",
+  "entry": "index.html",
+  "notes": "单文件 SVG 2D 动画（鹈鹕快递），内联 script 与 SVG use 引用，无外部依赖、无后端。"
+}
