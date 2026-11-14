@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "kind": "static",
+  "entry": "index.html",
+  "notes": "纯静态站点，无构建步骤、无外部网络依赖。Three.js r169 与所用 addons 已本地 vendor 到 vendor/，通过 importmap 以相对路径加载，需经 HTTP 托管（ES module + importmap 在 file:// 下不可用）。"
+}
