@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { connect, createServer } from 'node:net';
@@ -10,8 +10,8 @@ import type { LogLine, ProcessSpec, RunState } from '../src/shared/launch.ts';
  * 进程管理：按 bench.json 的 process 规范启动、等待就绪、停止产出。
  *
  * Studio 的 Vite 插件和 `pnpm bench` CLI 共用这一份实现。
- * 每次启动都用独立的进程组（detached），停止时整组发信号，
- * 这样 concurrently / npm run 这类会再派生子进程的命令也能停干净。
+ * 每次启动都独立成组（POSIX 用 detached 进程组，Windows 用 taskkill /T 的进程树），
+ * 停止时整组一起停，这样 concurrently / npm run 这类会再派生子进程的命令也能停干净。
  */
 
 const LOG_LIMIT = 3000;
@@ -19,6 +19,53 @@ const STOP_GRACE_MS = 3000;
 /** 自动分配端口的区间，避开常见开发端口（3000、5173、8080……）。 */
 const AUTO_PORT_FROM = 41000;
 const AUTO_PORT_TO = 41999;
+
+const IS_WINDOWS = process.platform === 'win32';
+
+/**
+ * Windows 上 Node 解析不了 /bin/sh，用 Git for Windows 自带的 sh.exe，
+ * 这样规范里的 `PORT=x cmd & other; wait` 这类 sh 语法照常可用。
+ * Git 默认只把 Git\cmd 加进 PATH，所以先按安装位置找，找不到再退回 PATH。
+ */
+function resolveShell(): string {
+  if (!IS_WINDOWS) return '/bin/sh';
+  const roots = [
+    process.env.ProgramFiles,
+    process.env['ProgramFiles(x86)'],
+    process.env.LOCALAPPDATA && join(process.env.LOCALAPPDATA, 'Programs'),
+  ];
+  for (const root of roots) {
+    if (!root) continue;
+    const candidate = join(root, 'Git', 'bin', 'sh.exe');
+    if (existsSync(candidate)) return candidate;
+  }
+  return 'sh.exe';
+}
+
+const SHELL = resolveShell();
+
+/** 停掉整棵进程树：POSIX 靠进程组信号，Windows 靠 taskkill /T。 */
+function killTree(pid: number, force: boolean, sync = false) {
+  if (IS_WINDOWS) {
+    const args = ['/pid', String(pid), '/T', ...(force ? ['/F'] : [])];
+    const options = { stdio: 'ignore' as const, windowsHide: true };
+    if (sync) {
+      try {
+        spawnSync('taskkill', args, options);
+      } catch {
+        /* 已退出 */
+      }
+    } else {
+      spawn('taskkill', args, options).once('error', () => undefined);
+    }
+    return;
+  }
+  try {
+    process.kill(-pid, force ? 'SIGKILL' : 'SIGTERM');
+  } catch {
+    /* 进程组已经没了 */
+  }
+}
 
 type Run = {
   state: RunState;
@@ -253,7 +300,13 @@ export class Runner {
   }
 
   private spawnShell(run: Run, command: string, cwd: string, env: NodeJS.ProcessEnv, onLog?: (line: LogLine) => void) {
-    const child = spawn('/bin/sh', ['-c', command], { cwd, env, detached: true, stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(SHELL, ['-c', command], {
+      cwd,
+      env,
+      detached: !IS_WINDOWS,
+      windowsHide: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
     run.child = child;
     run.state.pid = child.pid;
     child.stdout?.setEncoding('utf8').on('data', (chunk: string) => this.push(run, 'out', chunk, onLog));
@@ -355,40 +408,22 @@ export class Runner {
     }
     const pid = child.pid;
     const exited = new Promise<void>((done) => child.once('exit', () => done()));
-    try {
-      process.kill(-pid, 'SIGTERM');
-    } catch {
-      /* 进程组已经没了 */
-    }
-    const timer = setTimeout(() => {
-      try {
-        process.kill(-pid, 'SIGKILL');
-      } catch {
-        /* 已退出 */
-      }
-    }, STOP_GRACE_MS);
+    killTree(pid, false);
+    const timer = setTimeout(() => killTree(pid, true), STOP_GRACE_MS);
     await exited;
     clearTimeout(timer);
-    // 进程组里可能还有孤儿（父进程先退出），补一刀
-    try {
-      process.kill(-pid, 'SIGKILL');
-    } catch {
-      /* 都退出了 */
-    }
+    // 进程树里可能还有孤儿（父进程先退出），补一刀
+    killTree(pid, true);
     return { ...run.state };
   }
 
-  /** 同步杀掉全部进程组：Studio 退出时调用。 */
+  /** 同步杀掉全部进程树：Studio 退出时调用。 */
   killAll() {
     for (const run of this.runs.values()) {
       run.cancelled = true;
       const pid = run.child?.pid;
       if (!pid) continue;
-      try {
-        process.kill(-pid, 'SIGKILL');
-      } catch {
-        /* 已退出 */
-      }
+      killTree(pid, true, true);
     }
   }
 }
