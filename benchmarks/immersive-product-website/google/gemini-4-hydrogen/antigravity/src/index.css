@@ -1,0 +1,596 @@
+@import "tailwindcss";
+
+:root {
+  --bg-graphite: #0f1116;
+  --bg-graphite-elevated: #151922;
+  --bg-graphite-surface: #1b202b;
+  --ink-ice: #e8eef6;
+  --ink-silver: #a8b4c4;
+  --ink-muted: #6c7788;
+  --accent-amber: #c98a4b;
+  --accent-amber-soft: #d8a26a;
+  --accent-amber-deep: #855628;
+
+  /* Dynamic finish ambient variables (smoothly transitioned without reload) */
+  --room-ambient-1: rgba(176, 194, 218, 0.14);
+  --room-ambient-2: rgba(201, 138, 75, 0.12);
+  --room-ambient-rim: rgba(216, 226, 240, 0.22);
+
+  --font-sans: 'Outfit Variable', 'Geist Variable', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'Geist Mono Variable', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  color-scheme: dark;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    background-color: var(--bg-graphite);
+    color: var(--ink-ice);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--bg-graphite);
+    color: var(--ink-ice);
+    overflow-x: clip;
+    selection-background-color: rgba(201, 138, 75, 0.28);
+  }
+
+  ::selection {
+    background-color: rgba(201, 138, 75, 0.32);
+    color: #f3f7fc;
+  }
+}
+
+/* Film grain overlay for dark-room precision atmosphere */
+.dark-room-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.032;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
+/* =========================================================
+   LIQUID GLASS OPTICAL MATERIAL SYSTEM
+   (Inside @layer components so Tailwind position utilities like
+   `absolute`, `fixed`, `sticky` always take precedence)
+   ========================================================= */
+
+@layer components {
+.liquid-glass {
+  position: relative;
+  background:
+    radial-gradient(
+      120% 90% at 14% 0%,
+      rgba(228, 238, 250, 0.09) 0%,
+      rgba(228, 238, 250, 0.01) 46%,
+      transparent 75%
+    ),
+    linear-gradient(
+      155deg,
+      rgba(34, 40, 52, 0.72) 0%,
+      rgba(20, 24, 32, 0.62) 55%,
+      rgba(15, 18, 24, 0.74) 100%
+    );
+  backdrop-filter: blur(22px) saturate(135%) contrast(1.05);
+  -webkit-backdrop-filter: blur(22px) saturate(135%) contrast(1.05);
+  box-shadow:
+    inset 0 1px 0.5px rgba(238, 244, 252, 0.22),
+    inset 0 -12px 26px rgba(8, 10, 14, 0.52),
+    inset 1px 0 0 rgba(214, 228, 245, 0.08),
+    0 24px 60px -20px rgba(6, 8, 12, 0.82);
+}
+
+.liquid-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    132deg,
+    rgba(235, 242, 252, 0.46) 0%,
+    rgba(195, 210, 230, 0.16) 24%,
+    rgba(201, 138, 75, 0.22) 52%,
+    rgba(255, 255, 255, 0.05) 76%,
+    rgba(218, 228, 244, 0.18) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.liquid-glass-nav {
+  position: relative;
+  background:
+    radial-gradient(
+      140% 100% at 18% 0%,
+      rgba(235, 243, 254, 0.1) 0%,
+      transparent 60%
+    ),
+    linear-gradient(
+      165deg,
+      rgba(32, 37, 48, 0.54) 0%,
+      rgba(18, 21, 28, 0.46) 100%
+    );
+  backdrop-filter: blur(20px) saturate(130%) contrast(1.04);
+  -webkit-backdrop-filter: blur(20px) saturate(130%) contrast(1.04);
+  box-shadow:
+    inset 0 1px 0.5px rgba(238, 244, 252, 0.22),
+    inset 0 -8px 20px rgba(9, 11, 16, 0.36),
+    0 16px 42px -18px rgba(6, 8, 12, 0.65);
+  transition:
+    padding 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    max-width 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    background 420ms ease,
+    box-shadow 420ms ease,
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.liquid-glass-nav::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    125deg,
+    rgba(236, 243, 252, 0.42) 0%,
+    rgba(194, 208, 228, 0.14) 30%,
+    rgba(201, 138, 75, 0.18) 58%,
+    rgba(255, 255, 255, 0.06) 82%,
+    rgba(218, 228, 244, 0.16) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  transition: opacity 420ms ease;
+}
+
+.liquid-glass-nav--scrolled {
+  background:
+    radial-gradient(
+      140% 100% at 18% 0%,
+      rgba(235, 243, 254, 0.14) 0%,
+      transparent 58%
+    ),
+    linear-gradient(
+      165deg,
+      rgba(22, 26, 35, 0.92) 0%,
+      rgba(13, 16, 22, 0.90) 100%
+    );
+  backdrop-filter: blur(28px) saturate(145%) contrast(1.06);
+  -webkit-backdrop-filter: blur(28px) saturate(145%) contrast(1.06);
+  box-shadow:
+    inset 0 1px 0.5px rgba(242, 248, 255, 0.3),
+    inset 0 -10px 22px rgba(7, 9, 13, 0.68),
+    0 20px 50px -16px rgba(4, 6, 10, 0.88);
+}
+
+.liquid-glass-hud {
+  position: relative;
+  background:
+    radial-gradient(
+      100% 100% at 0% 0%,
+      rgba(236, 242, 252, 0.11) 0%,
+      transparent 55%
+    ),
+    linear-gradient(
+      160deg,
+      rgba(28, 33, 43, 0.68) 0%,
+      rgba(16, 19, 26, 0.58) 100%
+    );
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow:
+    inset 0 1px 0 rgba(235, 242, 252, 0.22),
+    inset 0 -6px 14px rgba(8, 10, 15, 0.52),
+    0.5px 0 0 rgba(196, 218, 244, 0.16),
+    -0.5px 0 0 rgba(201, 138, 75, 0.14),
+    0 18px 40px -14px rgba(5, 7, 11, 0.78);
+}
+
+.liquid-glass-hud::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    140deg,
+    rgba(232, 240, 252, 0.48) 0%,
+    rgba(196, 210, 230, 0.12) 38%,
+    rgba(201, 138, 75, 0.26) 72%,
+    rgba(220, 232, 246, 0.2) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Refractive CTA Glass & Magnetic Primary Surface */
+.cta-primary-glass {
+  position: relative;
+  background:
+    radial-gradient(
+      120px circle at var(--mx, 50%) var(--my, 50%),
+      rgba(255, 236, 214, 0.34) 0%,
+      rgba(216, 162, 106, 0.14) 45%,
+      transparent 75%
+    ),
+    linear-gradient(
+      145deg,
+      rgba(222, 165, 104, 0.94) 0%,
+      rgba(186, 126, 68, 0.9) 55%,
+      rgba(148, 96, 48, 0.94) 100%
+    );
+  color: #111318;
+  box-shadow:
+    inset 0 1px 0.5px rgba(255, 246, 234, 0.62),
+    inset 0 -8px 16px rgba(96, 56, 20, 0.42),
+    0 14px 36px -12px rgba(201, 138, 75, 0.38);
+  transition:
+    transform 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 240ms ease,
+    filter 200ms ease,
+    opacity 200ms ease;
+  transform: translate3d(var(--tx, 0px), var(--ty, 0px), 0);
+}
+
+.cta-primary-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 246, 234, 0.72) 0%,
+    rgba(220, 164, 104, 0.25) 55%,
+    rgba(255, 224, 188, 0.45) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.cta-primary-glass:hover:not(:disabled) {
+  filter: brightness(1.06);
+  box-shadow:
+    inset 0 1px 0.5px rgba(255, 248, 240, 0.76),
+    inset 0 -8px 18px rgba(96, 56, 20, 0.35),
+    0 18px 42px -10px rgba(201, 138, 75, 0.48);
+}
+
+.cta-primary-glass:active:not(:disabled) {
+  transform: translate3d(var(--tx, 0px), var(--ty, 0px), 0) scale(0.975);
+  filter: brightness(0.96);
+}
+
+.cta-primary-glass:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.cta-secondary-glass {
+  position: relative;
+  background:
+    radial-gradient(
+      110px circle at var(--mx, 50%) var(--my, 50%),
+      rgba(228, 238, 250, 0.14) 0%,
+      transparent 72%
+    ),
+    linear-gradient(
+      155deg,
+      rgba(36, 42, 54, 0.64) 0%,
+      rgba(20, 24, 32, 0.56) 100%
+    );
+  backdrop-filter: blur(18px) saturate(135%);
+  -webkit-backdrop-filter: blur(18px) saturate(135%);
+  color: var(--ink-ice);
+  box-shadow:
+    inset 0 1px 0.5px rgba(238, 244, 252, 0.22),
+    inset 0 -8px 18px rgba(8, 10, 14, 0.48),
+    0 14px 32px -14px rgba(5, 7, 10, 0.75);
+  transition:
+    transform 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 240ms ease,
+    background 240ms ease,
+    opacity 200ms ease;
+  transform: translate3d(var(--tx, 0px), var(--ty, 0px), 0);
+}
+
+.cta-secondary-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    132deg,
+    rgba(232, 240, 252, 0.42) 0%,
+    rgba(200, 212, 228, 0.12) 45%,
+    rgba(201, 138, 75, 0.2) 80%,
+    rgba(225, 235, 248, 0.18) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.cta-secondary-glass:hover:not(:disabled) {
+  box-shadow:
+    inset 0 1px 0.5px rgba(242, 248, 255, 0.34),
+    inset 0 -8px 18px rgba(8, 10, 14, 0.42),
+    0 18px 36px -12px rgba(4, 6, 10, 0.85);
+}
+
+.cta-secondary-glass:active:not(:disabled) {
+  transform: translate3d(var(--tx, 0px), var(--ty, 0px), 0) scale(0.975);
+}
+
+.cta-secondary-glass:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+}
+
+/* Focus-visible universal hairline ring */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 1.5px solid var(--accent-amber-soft);
+  outline-offset: 3px;
+}
+
+/* =========================================================
+   CHOREOGRAPHED LAUNCH ENTRANCE & ISOLATED PRODUCT MOTION
+   (Strictly transform + opacity)
+   ========================================================= */
+
+@keyframes enter-nav {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -18px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes enter-copy {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 22px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes enter-product {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 32px, 0) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes enter-hud {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes float-levitate {
+  0%,
+  100% {
+    transform: translate3d(0, 0px, 0);
+  }
+  50% {
+    transform: translate3d(0, -11px, 0);
+  }
+}
+
+@keyframes shadow-breathe {
+  0%,
+  100% {
+    opacity: 0.62;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    opacity: 0.42;
+    transform: translate3d(0, 0, 0) scale(0.92);
+  }
+}
+
+@keyframes light-sweep {
+  0% {
+    opacity: 0;
+    transform: translate3d(-140%, 0, 0) skewX(-20deg);
+  }
+  18% {
+    opacity: 0.65;
+  }
+  52% {
+    opacity: 0.16;
+  }
+  70% {
+    opacity: 0;
+    transform: translate3d(260%, 0, 0) skewX(-20deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(260%, 0, 0) skewX(-20deg);
+  }
+}
+
+@keyframes glass-panel-expand {
+  0% {
+    opacity: 0;
+    transform: translate3d(var(--origin-dx, 0px), var(--origin-dy, 24px), 0)
+      scale(0.84);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes modal-backdrop-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.anim-nav-enter {
+  animation: enter-nav 720ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.anim-copy-1 {
+  animation: enter-copy 760ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both;
+}
+
+.anim-copy-2 {
+  animation: enter-copy 800ms cubic-bezier(0.22, 1, 0.36, 1) 240ms both;
+}
+
+.anim-copy-3 {
+  animation: enter-copy 820ms cubic-bezier(0.22, 1, 0.36, 1) 340ms both;
+}
+
+.anim-copy-4 {
+  animation: enter-copy 820ms cubic-bezier(0.22, 1, 0.36, 1) 440ms both;
+}
+
+.anim-product-enter {
+  animation: enter-product 960ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both;
+}
+
+.anim-hud-1 {
+  animation: enter-hud 620ms cubic-bezier(0.22, 1, 0.36, 1) 420ms both;
+}
+
+.anim-hud-2 {
+  animation: enter-hud 620ms cubic-bezier(0.22, 1, 0.36, 1) 520ms both;
+}
+
+.anim-hud-3 {
+  animation: enter-hud 620ms cubic-bezier(0.22, 1, 0.36, 1) 620ms both;
+}
+
+.anim-levitate {
+  animation: float-levitate 7.2s ease-in-out infinite;
+  will-change: transform;
+}
+
+.anim-shadow-breathe {
+  animation: shadow-breathe 7.2s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.anim-light-sweep {
+  animation: light-sweep 6.8s cubic-bezier(0.37, 0, 0.2, 1) 1.2s infinite;
+  will-change: transform, opacity;
+}
+
+.anim-glass-expand {
+  animation: glass-panel-expand 440ms cubic-bezier(0.18, 0.9, 0.25, 1) both;
+}
+
+.anim-backdrop-in {
+  animation: modal-backdrop-in 300ms ease both;
+}
+
+/* Scroll reveal (transform + opacity only) */
+.reveal-block {
+  opacity: 0;
+  transform: translate3d(0, 26px, 0);
+  transition:
+    opacity 720ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 720ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal-block[data-visible='true'] {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+/* Tabular precision numbers */
+.tabular-tech {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .anim-nav-enter,
+  .anim-copy-1,
+  .anim-copy-2,
+  .anim-copy-3,
+  .anim-copy-4,
+  .anim-product-enter,
+  .anim-hud-1,
+  .anim-hud-2,
+  .anim-hud-3,
+  .anim-levitate,
+  .anim-shadow-breathe,
+  .anim-light-sweep,
+  .anim-glass-expand,
+  .anim-backdrop-in {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .cta-primary-glass,
+  .cta-secondary-glass,
+  .reveal-block,
+  .liquid-glass-nav {
+    transition-duration: 0.01ms !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}
