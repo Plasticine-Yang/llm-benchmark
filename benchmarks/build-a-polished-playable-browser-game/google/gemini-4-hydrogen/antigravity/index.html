@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#14324a" />
+  <title>Pelican Pedal — Coastal Pier Dash</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="game-shell" class="game-shell">
+    <canvas id="game-canvas" aria-label="Pelican Pedal arcade game canvas"></canvas>
+
+    <!-- Live HUD -->
+    <div id="hud" class="hud hidden" aria-live="polite">
+      <div class="hud-top">
+        <div class="hud-left">
+          <div id="hearts-row" class="hearts-row" aria-label="Health hearts"></div>
+          <div class="fever-wrap" title="Gulping fish & doing tricks fills Pelican Fever!">
+            <div class="fever-label">
+              <span class="fever-icon" aria-hidden="true">⚡</span>
+              <span id="fever-text">FEVER</span>
+            </div>
+            <div class="fever-bar">
+              <div id="fever-fill" class="fever-fill"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hud-center">
+          <div class="score-pill">
+            <span id="score-value" class="score-value">0</span>
+            <span id="combo-badge" class="combo-badge hidden">
+              <span id="combo-mult">x2</span>
+              <span class="combo-timer-track"><span id="combo-timer-fill" class="combo-timer-fill"></span></span>
+            </span>
+          </div>
+          <div class="distance-pill">
+            <span id="distance-value">0 m</span>
+            <span class="sep">•</span>
+            <span id="fish-value">🐟 0</span>
+          </div>
+        </div>
+
+        <div class="hud-right">
+          <div class="best-pill" title="Top local high score">
+            <span class="best-label">BEST</span>
+            <span id="best-value" class="best-value">0</span>
+          </div>
+          <button id="btn-touch-toggle" class="icon-btn" type="button" title="Toggle on-screen touch controls" aria-label="Toggle touch controls">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="2" y="6" width="20" height="12" rx="5"></rect>
+              <path d="M6 12h4M8 10v4"></path>
+              <circle cx="15.5" cy="11" r="1"></circle>
+              <circle cx="18" cy="13" r="1"></circle>
+            </svg>
+          </button>
+          <button id="btn-mute-hud" class="icon-btn" type="button" title="Mute or unmute sound (M)" aria-label="Toggle audio">
+            <svg class="icon-sound-on" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+            </svg>
+            <svg class="icon-sound-off hidden" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <line x1="23" y1="9" x2="17" y2="15"></line>
+              <line x1="17" y1="9" x2="23" y2="15"></line>
+            </svg>
+          </button>
+          <button id="btn-pause" class="icon-btn" type="button" title="Pause game (P / Esc)" aria-label="Pause game">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+              <rect x="6" y="4" width="4" height="16" rx="1.5"></rect>
+              <rect x="14" y="4" width="4" height="16" rx="1.5"></rect>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div id="live-hint" class="live-hint hidden">
+        <span>Hold <strong>JUMP</strong> higher • Tap mid-air to <strong>WING-FLAP</strong> • <strong>↓</strong> to Dive/Duck!</span>
+      </div>
+
+      <!-- On-screen Multi-Touch Controls -->
+      <div id="touch-controls" class="touch-controls hidden" aria-label="Touch gameplay controls">
+        <div class="touch-cluster touch-left">
+          <button class="touch-btn touch-wheelie" data-action="left" type="button" aria-label="Wheelie or Backflip">
+            <span class="touch-glyph">↺</span>
+            <span class="touch-name">WHEELIE</span>
+          </button>
+          <button class="touch-btn touch-sprint" data-action="right" type="button" aria-label="Pedal Boost or Frontflip">
+            <span class="touch-glyph">⚡</span>
+            <span class="touch-name">PEDAL</span>
+          </button>
+        </div>
+        <div class="touch-cluster touch-right">
+          <button class="touch-btn touch-dive" data-action="down" type="button" aria-label="Duck or Dive Slam">
+            <span class="touch-glyph">⬇</span>
+            <span class="touch-name">DUCK/DIVE</span>
+          </button>
+          <button class="touch-btn touch-jump" data-action="jump" type="button" aria-label="Jump or Wing Flap">
+            <span class="touch-glyph">⬆</span>
+            <span class="touch-name">JUMP/FLAP</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Start Screen Overlay -->
+    <section id="start-screen" class="overlay-screen" aria-label="Start Screen">
+      <div class="card hero-card">
+        <div class="card-badge">SUNBURST COAST GRAND PRIX</div>
+        <h1 class="game-title">
+          <span class="title-top">PELICAN</span>
+          <span class="title-bottom">PEDAL</span>
+        </h1>
+        <p class="subtitle">Gulp fish, flap over pier gaps, pop wheelies, and flip off boardwalk ramps!</p>
+
+        <div class="cta-row">
+          <button id="btn-start" class="btn btn-primary btn-lg" type="button">
+            <span>RIDE NOW</span>
+            <span class="btn-key-hint">SPACE</span>
+          </button>
+          <button id="btn-open-scores" class="btn btn-secondary" type="button">
+            <span>HIGH SCORES</span>
+          </button>
+          <button id="btn-mute-start" class="btn btn-ghost icon-only-text" type="button" aria-label="Toggle audio">
+            <span id="mute-start-label">🔊 Sound On</span>
+          </button>
+        </div>
+
+        <div class="controls-grid" aria-label="Game controls">
+          <div class="control-item">
+            <div class="keycap-group"><kbd>SPACE</kbd> / <kbd>↑</kbd></div>
+            <div class="control-desc"><strong>Jump</strong> &amp; tap mid-air for <strong>Wing-Flap</strong></div>
+          </div>
+          <div class="control-item">
+            <div class="keycap-group"><kbd>↓</kbd> / <kbd>S</kbd></div>
+            <div class="control-desc"><strong>Duck</strong> under gulls or <strong>Dive-Slam</strong> crates</div>
+          </div>
+          <div class="control-item">
+            <div class="keycap-group"><kbd>←</kbd> <kbd>→</kbd></div>
+            <div class="control-desc"><strong>Wheelie / Backflip</strong> &amp; <strong>Sprint / Frontflip</strong></div>
+          </div>
+          <div class="control-item">
+            <div class="keycap-group"><kbd>TOUCH</kbd></div>
+            <div class="control-desc">Ergonomic dual-thumb pedals, flap &amp; dive buttons</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- High Scores Screen -->
+    <section id="highscores-screen" class="overlay-screen hidden" aria-label="Local High Score Table">
+      <div class="card scores-card">
+        <div class="scores-header">
+          <div>
+            <div class="card-badge">BOARDWALK HALL OF FAME</div>
+            <h2 class="section-title">Local High Scores</h2>
+          </div>
+          <button id="btn-close-scores" class="btn btn-ghost btn-sm" type="button">← Back</button>
+        </div>
+
+        <div id="scores-table-wrap" class="scores-table-wrap">
+          <table class="scores-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Rider</th>
+                <th>Score</th>
+                <th>Dist</th>
+                <th>Fish</th>
+              </tr>
+            </thead>
+            <tbody id="scores-tbody"></tbody>
+          </table>
+        </div>
+
+        <div class="scores-footer">
+          <button id="btn-reset-scores" class="btn btn-ghost btn-sm danger-text" type="button">Reset Table</button>
+          <button id="btn-play-from-scores" class="btn btn-primary" type="button">Ride Now</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pause Overlay -->
+    <section id="pause-screen" class="overlay-screen hidden" aria-label="Pause Menu">
+      <div class="card compact-card">
+        <div class="card-badge">BREAK ON THE PIER</div>
+        <h2 class="section-title">Paused</h2>
+        <p class="pause-sub">Take a breather — your pelican's beak is still warm.</p>
+        <div class="stack-actions">
+          <button id="btn-resume" class="btn btn-primary btn-lg" type="button">
+            <span>Resume Ride</span>
+            <span class="btn-key-hint">P</span>
+          </button>
+          <button id="btn-restart-pause" class="btn btn-secondary" type="button">
+            <span>Instant Restart</span>
+            <span class="btn-key-hint">R</span>
+          </button>
+          <div class="row-actions">
+            <button id="btn-mute-pause" class="btn btn-ghost" type="button">🔊 Sound On</button>
+            <button id="btn-quit-title" class="btn btn-ghost" type="button">Title Screen</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Game Over Overlay -->
+    <section id="gameover-screen" class="overlay-screen hidden" aria-label="Game Over Summary">
+      <div class="card gameover-card">
+        <div id="gameover-badge" class="card-badge">WIPEOUT AT THE PIER!</div>
+        <h2 id="gameover-title" class="section-title">What a Ride!</h2>
+
+        <div id="new-record-banner" class="new-record-banner hidden">
+          <span class="trophy">🏆</span>
+          <span id="new-record-text">NEW HIGH SCORE!</span>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-box stat-highlight">
+            <span class="stat-label">FINAL SCORE</span>
+            <span id="go-score" class="stat-num">0</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">DISTANCE</span>
+            <span id="go-distance" class="stat-num">0 m</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">FISH GULPED</span>
+            <span id="go-fish" class="stat-num">0</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">BEST COMBO</span>
+            <span id="go-combo" class="stat-num">x1</span>
+          </div>
+        </div>
+
+        <div id="name-entry-row" class="name-entry-row hidden">
+          <label for="rider-name-input" class="name-label">Rider Name</label>
+          <input id="rider-name-input" class="name-input" type="text" maxlength="10" placeholder="PELI" autocomplete="off" spellcheck="false" />
+          <button id="btn-save-name" class="btn btn-secondary btn-sm" type="button">Save</button>
+        </div>
+
+        <div class="mini-leaderboard">
+          <div class="mini-lb-header">
+            <span>Top Local Riders</span>
+            <span class="mini-lb-hint">Stored locally</span>
+          </div>
+          <ol id="go-leaderboard" class="mini-lb-list"></ol>
+        </div>
+
+        <div class="gameover-actions">
+          <button id="btn-restart-gameover" class="btn btn-primary btn-lg" type="button">
+            <span>Ride Again</span>
+            <span class="btn-key-hint">R / SPACE</span>
+          </button>
+          <button id="btn-title-gameover" class="btn btn-ghost" type="button">Title</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/particles.js"></script>
+  <script src="js/world.js"></script>
+  <script src="js/pelican.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
