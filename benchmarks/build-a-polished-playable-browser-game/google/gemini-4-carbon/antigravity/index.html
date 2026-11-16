@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0c2340" />
+  <title>Pelican Pedal — Boardwalk Beak Express</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="game-root">
+    <canvas id="game-canvas" aria-label="Pelican Pedal game canvas"></canvas>
+
+    <!-- Live Gameplay HUD -->
+    <div id="hud" class="hidden">
+      <div class="hud-top">
+        <div class="hud-stats">
+          <div class="hud-pill">
+            <span class="hud-label">Score</span>
+            <span id="hud-score" class="hud-value">0</span>
+            <span id="hud-distance" class="hud-sub">0 m</span>
+          </div>
+
+          <div id="hud-combo-pill" class="hud-pill combo-pill">
+            <div class="combo-row">
+              <span class="hud-label">Combo</span>
+              <span id="hud-combo-mult" class="combo-mult">x1</span>
+            </div>
+            <div class="combo-bar-track">
+              <div id="hud-combo-bar" class="combo-bar-fill"></div>
+            </div>
+          </div>
+
+          <div id="hud-pouch-pill" class="hud-pill pouch-pill">
+            <div class="pouch-header">
+              <span id="hud-pouch-label" class="hud-label">Pouch Fever</span>
+              <span id="hud-pouch-count" class="pouch-count">0 / 10</span>
+            </div>
+            <div class="pouch-bar-track">
+              <div id="hud-pouch-bar" class="pouch-bar-fill"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hud-actions">
+          <button id="btn-hud-mute" class="icon-btn" type="button" title="Toggle Sound (M)" aria-label="Toggle Sound">
+            <svg id="icon-sound-on" viewBox="0 0 24 24">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+            </svg>
+            <svg id="icon-sound-off" viewBox="0 0 24 24" style="display:none;">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <line x1="23" y1="9" x2="17" y2="15"></line>
+              <line x1="17" y1="9" x2="23" y2="15"></line>
+            </svg>
+          </button>
+          <button id="btn-hud-pause" class="icon-btn" type="button" title="Pause (P / Esc)" aria-label="Pause Game">
+            <svg viewBox="0 0 24 24">
+              <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+              <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile / Tablet On-Screen Touch Indicators -->
+      <div class="touch-controls">
+        <div id="touch-left-badge" class="touch-pad-badge">
+          <span class="touch-key-icon">↓</span>
+          <span>TUCK / DIVE</span>
+        </div>
+        <div id="touch-right-badge" class="touch-pad-badge">
+          <span>JUMP / FLAP</span>
+          <span class="touch-key-icon">↑</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Start Screen Overlay -->
+    <div id="start-overlay" class="overlay">
+      <div class="panel-card start-card">
+        <div class="postcard-stamp">SUNSET PIER • EST. 1986</div>
+        <h1 class="game-title">PELICAN <span>PEDAL</span></h1>
+        <p class="game-subtitle">
+          Hop crabs, grind pier rails, bounce off beach umbrellas &amp; stuff your beak pouch for <strong>Sunset Fever!</strong>
+        </p>
+
+        <div class="style-switcher">
+          <span class="style-label" id="style-name-label">Cruiser: Coral Sailor</span>
+          <div class="swatch-group" role="group" aria-label="Choose bike color">
+            <button type="button" class="swatch-btn active" data-theme="0" style="background: #ff5e4d;" title="Coral Sailor"></button>
+            <button type="button" class="swatch-btn" data-theme="1" style="background: #0ea5a4;" title="Seafoam Captain"></button>
+            <button type="button" class="swatch-btn" data-theme="2" style="background: #ffb800;" title="Sunburst Aviator"></button>
+            <button type="button" class="swatch-btn" data-theme="3" style="background: #7c3aed;" title="Twilight Flyer"></button>
+          </div>
+        </div>
+
+        <div class="controls-box">
+          <div class="control-chip">
+            <div class="control-chip-title">
+              <span class="keycap">SPACE</span> <span class="keycap">↑</span> or <strong>Tap Right</strong>
+            </div>
+            <div class="control-chip-desc">Bunny-hop • Tap in air to <strong>Wing-Flap</strong> • Hold to <strong>Glide</strong></div>
+          </div>
+          <div class="control-chip">
+            <div class="control-chip-title">
+              <span class="keycap">↓</span> <span class="keycap">S</span> or <strong>Hold Left / Swipe ↓</strong>
+            </div>
+            <div class="control-chip-desc"><strong>Aero-Tuck</strong> under signs • <strong>Dive-Slam</strong> crates &amp; umbrellas</div>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button id="btn-start-play" class="btn btn-primary" type="button">
+            <span>RIDE THE PIER!</span>
+            <span class="shortcut-hint">SPACE</span>
+          </button>
+          <button id="btn-start-mute" class="btn btn-secondary" type="button" aria-label="Toggle Sound">
+            <span id="start-mute-label">Sound: ON</span>
+          </button>
+        </div>
+
+        <div class="leaderboard-section">
+          <div class="leaderboard-header">
+            <span class="leaderboard-title">Top Boardwalk Riders</span>
+            <label class="rider-tag-box">
+              Rider:
+              <input id="rider-name-start" class="rider-input" type="text" maxlength="10" value="BARNABY" spellcheck="false" autocomplete="off" />
+            </label>
+          </div>
+          <ol id="start-leaderboard" class="leaderboard-list"></ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pause Overlay -->
+    <div id="pause-overlay" class="overlay hidden">
+      <div class="panel-card pause-card">
+        <div class="postcard-stamp">COASTING BREAK</div>
+        <h2 class="gameover-title">PAUSED</h2>
+        <p class="gameover-reason">Barnaby is resting his webbed feet.</p>
+
+        <div class="pause-stack">
+          <button id="btn-pause-resume" class="btn btn-primary" type="button">
+            <span>RESUME RIDE</span>
+            <span class="shortcut-hint">P / ESC</span>
+          </button>
+          <button id="btn-pause-restart" class="btn btn-gold" type="button">
+            <span>INSTANT RESTART</span>
+            <span class="shortcut-hint">R</span>
+          </button>
+          <button id="btn-pause-mute" class="btn btn-secondary" type="button">
+            <span id="pause-mute-label">Sound: ON</span>
+            <span class="shortcut-hint">M</span>
+          </button>
+          <button id="btn-pause-menu" class="btn btn-secondary" type="button">
+            <span>TITLE SCREEN</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Over Overlay -->
+    <div id="gameover-overlay" class="overlay hidden">
+      <div class="panel-card">
+        <div class="gameover-header">
+          <div id="new-record-badge" class="new-record-badge hidden">★ NEW HIGH SCORE! ★</div>
+          <h2 class="gameover-title">WIPEOUT ON THE PIER!</h2>
+          <p id="gameover-reason" class="gameover-reason">Clipped a snappy boardwalk crab!</p>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-tile highlight">
+            <div class="stat-tile-label">Score</div>
+            <div id="go-score" class="stat-tile-val">0</div>
+          </div>
+          <div class="stat-tile">
+            <div class="stat-tile-label">Distance</div>
+            <div id="go-distance" class="stat-tile-val">0m</div>
+          </div>
+          <div class="stat-tile">
+            <div class="stat-tile-label">Fish Gulped</div>
+            <div id="go-fish" class="stat-tile-val">0</div>
+          </div>
+          <div class="stat-tile">
+            <div class="stat-tile-label">Best Combo</div>
+            <div id="go-combo" class="stat-tile-val">x1</div>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button id="btn-go-restart" class="btn btn-primary" type="button">
+            <span>RIDE AGAIN!</span>
+            <span class="shortcut-hint">SPACE / R</span>
+          </button>
+          <button id="btn-go-menu" class="btn btn-secondary" type="button">
+            <span>TITLE</span>
+          </button>
+        </div>
+
+        <div class="leaderboard-section">
+          <div class="leaderboard-header">
+            <span class="leaderboard-title">Local High Scores</span>
+            <label class="rider-tag-box">
+              Rider:
+              <input id="rider-name-go" class="rider-input" type="text" maxlength="10" value="BARNABY" spellcheck="false" autocomplete="off" />
+            </label>
+          </div>
+          <ol id="go-leaderboard" class="leaderboard-list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="audio.js"></script>
+  <script src="renderer.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
